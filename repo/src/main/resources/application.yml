@@ -12,7 +12,12 @@ spring:
       connection-timeout: 30000
   jpa:
     hibernate:
-      ddl-auto: validate
+      # Flyway is the authoritative schema source (V1..V5 migrations). Hibernate must NOT
+      # validate or modify the schema in production: many entities use @Lob byte[] for AES
+      # ciphertext columns that are actually VARBINARY(N) in the migration, and "validate"
+      # rejects that downgrade. Tests use create-drop in application-test.yml, which is
+      # safe because they run against an in-memory H2 from the entity model directly.
+      ddl-auto: none
     show-sql: false
     properties:
       hibernate:

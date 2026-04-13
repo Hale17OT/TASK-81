@@ -47,8 +47,10 @@ public class CrawlerTaskEntity {
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
+    // Schema is LONGBLOB (V1__initial_schema.sql:436) — must declare explicitly so
+    // Hibernate's schema validation doesn't downgrade @Lob to TINYBLOB on MySQL.
     @Lob
-    @Column(name = "raw_content")
+    @Column(name = "raw_content", columnDefinition = "LONGBLOB")
     private byte[] rawContent;
 
     @Column(name = "parser_version")

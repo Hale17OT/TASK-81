@@ -20,8 +20,12 @@ echo ">>> Running integration tests..."
 
 # ---- Build Docker Test Environment ----
 # Reuses the project's docker-compose.yml (mysql + app) so E2E exercises the same image
-# that ships to operators. Required env vars (MASTER_KEY_PASSPHRASE,
-# SERVER_SSL_KEY_STORE_PASSWORD) must be set in the calling shell or .env.
+# that ships to operators. MASTER_KEY_PASSPHRASE / SERVER_SSL_KEY_STORE_PASSWORD have CI
+# defaults baked into the compose file; production deployments override them.
+echo ""
+echo ">>> Cleaning up any prior containers/volumes (idempotent)..."
+docker compose down -v --remove-orphans 2>/dev/null || true
+
 echo ""
 echo ">>> Building and starting Docker environment..."
 docker compose up -d --build
@@ -47,6 +51,15 @@ done
 echo "Application is ready."
 
 # ---- E2E Tests ----
+# Ensure Playwright browser binaries are present. Auto-download from cdn.playwright.dev
+# can stall on first run; this explicit install fails fast with a clearer message AND
+# becomes a no-op on subsequent runs because the cache is already populated.
+echo ""
+echo ">>> Installing Playwright browsers (no-op if cached)..."
+./mvnw -q exec:java -e -Dexec.classpathScope=test \
+    -Dexec.mainClass=com.microsoft.playwright.CLI -Dexec.args="install --with-deps chromium" \
+    || echo "  (Playwright install reported non-zero — proceeding; tests may still pass if cache exists)"
+
 echo ""
 echo ">>> Running E2E tests..."
 E2E_EXIT_CODE=0

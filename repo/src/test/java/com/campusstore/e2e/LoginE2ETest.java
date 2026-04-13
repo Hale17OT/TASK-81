@@ -45,9 +45,13 @@ class LoginE2ETest extends BaseE2ETest {
         Locator passwordField = page.locator("input[name='password']");
         assertThat(passwordField).isVisible();
 
-        // A submit button should exist
+        // A submit button should exist. Use Pattern.CASE_INSENSITIVE rather than inline
+        // "(?i)" — Playwright's selector engine translates Java patterns into JS regex
+        // and rejects inline mode flags as "Invalid group", producing a startup error
+        // before any waiting begins. The flag constant maps cleanly to JS's /…/i form.
         Locator submitButton = page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName(
-                java.util.regex.Pattern.compile("(?i)login|sign.?in|submit")));
+                java.util.regex.Pattern.compile("login|sign.?in|submit",
+                        java.util.regex.Pattern.CASE_INSENSITIVE)));
         assertThat(submitButton).isVisible();
     }
 }

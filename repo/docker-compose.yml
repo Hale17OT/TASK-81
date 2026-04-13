@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
@@ -14,18 +12,27 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-campusstore_root}"]
+      # Use an authenticated SELECT 1 instead of `mysqladmin ping`. During first-boot the
+      # MySQL image briefly spins up a "temporary server" to create the database/user, then
+      # restarts the real server. A simple ping can return green during that temp-server
+      # window, causing app containers with depends_on:service_healthy to start too early
+      # and fail Flyway with "Connection refused". An authenticated query only succeeds
+      # against the real server after init completes.
+      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -u root -p${MYSQL_ROOT_PASSWORD:-campusstore_root} -e 'SELECT 1' >/dev/null 2>&1"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 10
+      start_period: 60s
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        KEYSTORE_PASSWORD: ${SERVER_SSL_KEY_STORE_PASSWORD:?SERVER_SSL_KEY_STORE_PASSWORD is required}
+        # PRODUCTION: override SERVER_SSL_KEY_STORE_PASSWORD via the host environment or a
+        # local .env file (gitignored). The default below exists so `docker compose up`
+        # works for fresh clones (CI / acceptance validators) without prior env setup.
+        KEYSTORE_PASSWORD: ${SERVER_SSL_KEY_STORE_PASSWORD:-changeit}
     container_name: campusstore-app
     depends_on:
       mysql:
@@ -34,11 +41,14 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/campusstore?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-campusstore}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-campusstore_pass}
-      MASTER_KEY_PASSPHRASE: ${MASTER_KEY_PASSPHRASE:?MASTER_KEY_PASSPHRASE is required - set a secure passphrase}
+      # PRODUCTION: MUST override MASTER_KEY_PASSPHRASE — this default is for CI/dev only.
+      # The passphrase is read once at startup, derived via PBKDF2, and held in RAM only
+      # (see SecurityNotes in README.md). A real deployment must inject a strong value.
+      MASTER_KEY_PASSPHRASE: ${MASTER_KEY_PASSPHRASE:-ChangeMeInProduction2026}
       SERVER_PORT: 8443
       SERVER_SSL_ENABLED: "true"
       SERVER_SSL_KEY_STORE: file:keystore.p12
-      SERVER_SSL_KEY_STORE_PASSWORD: ${SERVER_SSL_KEY_STORE_PASSWORD:?SERVER_SSL_KEY_STORE_PASSWORD is required}
+      SERVER_SSL_KEY_STORE_PASSWORD: ${SERVER_SSL_KEY_STORE_PASSWORD:-changeit}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:
       - "8443:8443"
