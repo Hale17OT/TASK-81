@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head><title>Email Outbox</title></head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-stack" style="gap: var(--spacingVerticalXXL);">
+        <div class="d-flex justify-between items-center">
+            <h1>Email Outbox</h1>
+            <form th:action="@{/admin/email-outbox/export}" method="post">
+                <button type="submit" class="fluent-btn fluent-btn--primary" data-confirm="Export all queued emails to ZIP?">Export to ZIP</button>
+            </form>
+        </div>
+        <div class="fluent-card">
+            <div class="fluent-card-body">
+                <table class="fluent-table fluent-table--striped">
+                    <thead><tr><th>ID</th><th>Subject</th><th>Status</th><th>Created</th></tr></thead>
+                    <tbody>
+                        <tr th:each="email : ${emails.content}">
+                            <td th:text="${email.id}">ID</td>
+                            <td th:text="${email.subject}">Subject</td>
+                            <td><span class="fluent-badge" th:classappend="${email.status == 'QUEUED'} ? 'fluent-badge--warning' : (${email.status == 'EXPORTED'} ? 'fluent-badge--success' : 'fluent-badge--danger')" th:text="${email.status}">STATUS</span></td>
+                            <td th:text="${email.createdAt}">Time</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div th:if="${emails.content.isEmpty()}" class="empty-state"><p>No emails in outbox.</p></div>
+            </div>
+        </div>
+        <div th:if="${emails.totalPages > 1}" th:replace="~{fragments/pagination :: pagination(${emails}, '/admin/email-outbox')}"></div>
+    </div>
+</div>
+</body>
+</html>

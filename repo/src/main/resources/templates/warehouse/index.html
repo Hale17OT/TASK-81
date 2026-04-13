@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head><title>Warehouse</title></head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-stack" style="gap: var(--spacingVerticalXXL);">
+        <h1>Warehouse Management</h1>
+
+        <!-- Locations -->
+        <div class="fluent-card">
+            <div class="fluent-card-header"><h2>Storage Locations</h2></div>
+            <div class="fluent-card-body">
+                <table class="fluent-table fluent-table--striped">
+                    <thead><tr><th>Name</th><th>Zone</th><th>Coords (X,Y,L)</th><th>Temp Zone</th><th>Security</th><th>Occupancy</th></tr></thead>
+                    <tbody>
+                        <tr th:each="loc : ${locations.content}">
+                            <td th:text="${loc.name}">Name</td>
+                            <td th:text="${loc.zone?.name}">Zone</td>
+                            <td th:text="${loc.xCoord + ',' + loc.yCoord + ',' + loc.level}">0,0,0</td>
+                            <td><span class="fluent-badge" th:text="${loc.temperatureZone}">AMBIENT</span></td>
+                            <td><span class="fluent-badge" th:text="${loc.securityLevel}">STANDARD</span></td>
+                            <td><div class="fluent-progress" style="width:100px;"><div class="fluent-progress-bar" th:style="'width:' + ${(loc.currentOccupancy * 100 / loc.capacity)} + '%'"></div></div><small th:text="${loc.currentOccupancy + '/' + loc.capacity}">0/100</small></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Putaway -->
+        <div class="fluent-card">
+            <div class="fluent-card-header"><h2>Putaway Recommendation</h2></div>
+            <div class="fluent-card-body">
+                <form id="putaway-form" class="d-flex" style="gap: var(--spacingHorizontalS);">
+                    <select id="putaway-item" class="fluent-select" style="flex:1;">
+                        <option value="">Select item...</option>
+                        <option th:each="item : ${items}" th:value="${item.id}" th:text="${item.name}">Item</option>
+                    </select>
+                    <button type="button" class="fluent-btn fluent-btn--primary" onclick="getPutaway()">Get Recommendations</button>
+                </form>
+                <div id="putaway-results" style="margin-top: var(--spacingVerticalL);"></div>
+            </div>
+        </div>
+
+        <!-- Pick Path -->
+        <div class="fluent-card">
+            <div class="fluent-card-header"><h2>Pick Path Generator</h2></div>
+            <div class="fluent-card-body">
+                <form id="pickpath-form">
+                    <div class="fluent-form-group"><label class="fluent-label">Pick Task IDs (comma-separated)</label>
+                        <input type="text" id="pick-task-ids" class="fluent-input" placeholder="1,2,3"/></div>
+                    <button type="button" class="fluent-btn fluent-btn--primary" onclick="generatePickPath()">Generate Path</button>
+                </form>
+                <div id="pickpath-results" style="margin-top: var(--spacingVerticalL);"></div>
+            </div>
+        </div>
+
+        <!-- Simulation -->
+        <div class="fluent-card">
+            <div class="fluent-card-header"><h2>Strategy Simulation (Shadow Engine)</h2></div>
+            <div class="fluent-card-body">
+                <form id="simulation-form" class="d-flex" style="gap: var(--spacingHorizontalS);">
+                    <div class="fluent-form-group"><label class="fluent-label">Proposed Level Multiplier</label>
+                        <input type="number" id="sim-multiplier" class="fluent-input" step="0.1" value="2.0" min="0.1"/></div>
+                    <button type="button" class="fluent-btn fluent-btn--primary" onclick="runSimulation()" style="align-self:flex-end;">Run Simulation</button>
+                </form>
+                <div id="simulation-results" style="margin-top: var(--spacingVerticalL);"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<div layout:fragment="scripts">
+<script>
+function getPutaway() {
+    var itemId = document.getElementById('putaway-item').value;
+    if (!itemId) { showAlert('Select an item', 'warning'); return; }
+    campusApi.post('/api/warehouse/putaway', {itemId: parseInt(itemId)}).then(function(r) {
+        if (r.success && r.data) {
+            var html = '<h3>Recommended Locations:</h3><ol>';
+            r.data.forEach(function(loc) {
+                var zoneName = (loc.zone && loc.zone.name) ? loc.zone.name : (loc.zoneName || '-');
+                var cap = loc.capacity != null ? loc.capacity : 0;
+                var occ = loc.currentOccupancy != null ? loc.currentOccupancy : 0;
+                var remaining = (loc.remaining != null) ? loc.remaining : (cap - occ);
+                html += '<li><strong>' + loc.name + '</strong> (Zone: ' + zoneName + ', Capacity: ' + remaining + ' remaining)</li>';
+            });
+            html += '</ol>';
+            document.getElementById('putaway-results').innerHTML = html;
+        }
+    });
+}
+function generatePickPath() {
+    var ids = document.getElementById('pick-task-ids').value.split(',').map(Number).filter(Boolean);
+    if (!ids.length) { showAlert('Enter pick task IDs', 'warning'); return; }
+    campusApi.post('/api/warehouse/pick-path', {pickTaskIds: ids}).then(function(r) {
+        if (r.success && r.data) {
+            var html = '<h3>Optimized Pick Path (Total Cost: ' + r.data.totalCost.toFixed(2) + ')</h3><ol>';
+            r.data.steps.forEach(function(s) { html += '<li>' + s.locationName + ' (Step Cost: ' + s.stepCost.toFixed(2) + ')</li>'; });
+            html += '</ol>';
+            document.getElementById('pickpath-results').innerHTML = html;
+        }
+    });
+}
+function runSimulation() {
+    var mult = parseFloat(document.getElementById('sim-multiplier').value);
+    campusApi.post('/api/warehouse/simulate', {proposedLevelMultiplier: mult}).then(function(r) {
+        if (r.success && r.data) {
+            document.getElementById('simulation-results').innerHTML = '<div class="fluent-card fluent-card--outline"><div class="fluent-card-body">' +
+                '<p><strong>Orders Analyzed:</strong> ' + r.data.orderCount + '</p>' +
+                '<p><strong>Avg Steps Saved:</strong> ' + r.data.avgStepsSaved.toFixed(2) + '</p>' +
+                '<p><strong>Total Cost Saved:</strong> ' + r.data.totalCostSaved.toFixed(2) + '</p>' +
+                '<p><strong>Proposed vs Actual Ratio:</strong> ' + r.data.proposedVsActualRatio.toFixed(4) + '</p></div></div>';
+        }
+    });
+}
+</script>
+</div>
+</body>
+</html>

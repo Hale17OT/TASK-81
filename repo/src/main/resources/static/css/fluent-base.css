@@ -1,0 +1,1733 @@
+/* ==========================================================================
+   Fluent UI v9 Base Components — Pure CSS
+   CampusStore Design System
+
+   All styles reference tokens from fluent-tokens.css. No magic numbers.
+   Every interactive element has :hover, :active, :focus, :disabled states.
+   ========================================================================== */
+
+/* ==========================================================================
+   RESET & BASE
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--fontFamilyBase);
+  font-size: var(--fontSizeBase300);
+  font-weight: var(--fontWeightRegular);
+  line-height: var(--lineHeightBase300);
+  color: var(--colorNeutralForeground1);
+  background-color: var(--colorNeutralBackground2);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--colorBrandForegroundLink);
+  text-decoration: none;
+  transition: color var(--durationFast) var(--curveEasyEase);
+}
+
+a:hover {
+  color: var(--colorBrandForegroundLinkHover);
+  text-decoration: underline;
+}
+
+a:active {
+  color: var(--colorBrandForegroundLinkPressed);
+}
+
+a:focus-visible {
+  outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+  outline-offset: var(--strokeWidthThin);
+  border-radius: var(--borderRadiusSmall);
+}
+
+/* ==========================================================================
+   BUTTONS — .fluent-btn
+   ========================================================================== */
+
+.fluent-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacingHorizontalXS);
+  min-width: 96px;
+  min-height: 32px;
+  padding: var(--spacingVerticalSNudge) var(--spacingHorizontalM);
+  border: var(--strokeWidthThin) solid var(--colorNeutralStroke1);
+  border-radius: var(--borderRadiusMedium);
+  background-color: var(--colorNeutralBackground1);
+  color: var(--colorNeutralForeground1);
+  font-family: var(--fontFamilyBase);
+  font-size: var(--fontSizeBase300);
+  font-weight: var(--fontWeightSemibold);
+  line-height: var(--lineHeightBase300);
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+  white-space: nowrap;
+  vertical-align: middle;
+  transition:
+    background-color var(--durationFast) var(--curveEasyEase),
+    border-color var(--durationFast) var(--curveEasyEase),
+    color var(--durationFast) var(--curveEasyEase),
+    box-shadow var(--durationFast) var(--curveEasyEase);
+}
+
+.fluent-btn:hover {
+  background-color: var(--colorNeutralBackground1Hover);
+  border-color: var(--colorNeutralStroke1Hover);
+  color: var(--colorNeutralForeground1Hover);
+}
+
+.fluent-btn:active {
+  background-color: var(--colorNeutralBackground1Pressed);
+  border-color: var(--colorNeutralStroke1Pressed);
+  color: var(--colorNeutralForeground1Pressed);
+}
+
+.fluent-btn:focus-visible {
+  outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+  outline-offset: var(--strokeWidthThin);
+}
+
+.fluent-btn:disabled,
+.fluent-btn[disabled] {
+  background-color: var(--colorNeutralBackgroundDisabled);
+  border-color: var(--colorNeutralStrokeDisabled);
+  color: var(--colorNeutralForegroundDisabled);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Button — Primary */
+.fluent-btn--primary {
+  background-color: var(--colorBrandBackground);
+  border-color: var(--colorBrandBackground);
+  color: var(--colorNeutralForegroundOnBrand);
+}
+
+.fluent-btn--primary:hover {
+  background-color: var(--colorBrandBackgroundHover);
+  border-color: var(--colorBrandBackgroundHover);
+  color: var(--colorNeutralForegroundOnBrand);
+}
+
+.fluent-btn--primary:active {
+  background-color: var(--colorBrandBackgroundPressed);
+  border-color: var(--colorBrandBackgroundPressed);
+  color: var(--colorNeutralForegroundOnBrand);
+}
+
+.fluent-btn--primary:disabled,
+.fluent-btn--primary[disabled] {
+  background-color: var(--colorNeutralBackgroundDisabled);
+  border-color: var(--colorNeutralStrokeDisabled);
+  color: var(--colorNeutralForegroundDisabled);
+}
+
+/* Button — Outline */
+.fluent-btn--outline {
+  background-color: var(--colorTransparentBackground);
+  border-color: var(--colorBrandStroke1);
+  color: var(--colorBrandForeground1);
+}
+
+.fluent-btn--outline:hover {
+  background-color: var(--colorBrandBackground2Hover);
+  border-color: var(--colorBrandStroke1);
+  color: var(--colorBrandForeground1);
+}
+
+.fluent-btn--outline:active {
+  background-color: var(--colorBrandBackground2Pressed);
+  border-color: var(--colorBrandStroke1);
+  color: var(--colorBrandForeground2);
+}
+
+.fluent-btn--outline:disabled,
+.fluent-btn--outline[disabled] {
+  background-color: var(--colorTransparentBackground);
+  border-color: var(--colorNeutralStrokeDisabled);
+  color: var(--colorNeutralForegroundDisabled);
+}
+
+/* Button — Subtle */
+.fluent-btn--subtle {
+  background-color: var(--colorSubtleBackground);
+  border-color: transparent;
+  color: var(--colorNeutralForeground2);
+}
+
+.fluent-btn--subtle:hover {
+  background-color: var(--colorSubtleBackgroundHover);
+  border-color: transparent;
+  color: var(--colorNeutralForeground2Hover);
+}
+
+.fluent-btn--subtle:active {
+  background-color: var(--colorSubtleBackgroundPressed);
+  border-color: transparent;
+  color: var(--colorNeutralForeground2Pressed);
+}
+
+.fluent-btn--subtle:disabled,
+.fluent-btn--subtle[disabled] {
+  background-color: var(--colorTransparentBackground);
+  border-color: transparent;
+  color: var(--colorNeutralForegroundDisabled);
+}
+
+/* Button — Danger */
+.fluent-btn--danger {
+  background-color: var(--colorPaletteRedBackground3);
+  border-color: var(--colorPaletteRedBackground3);
+  color: var(--colorNeutralForegroundStaticInverted);
+}
+
+.fluent-btn--danger:hover {
+  background-color: var(--colorPaletteRedForeground1);
+  border-color: var(--colorPaletteRedForeground1);
+  color: var(--colorNeutralForegroundStaticInverted);
+}
+
+.fluent-btn--danger:active {
+  background-color: var(--colorPaletteDarkRedForeground1);
+  border-color: var(--colorPaletteDarkRedForeground1);
+  color: var(--colorNeutralForegroundStaticInverted);
+}
+
+.fluent-btn--danger:disabled,
+.fluent-btn--danger[disabled] {
+  background-color: var(--colorNeutralBackgroundDisabled);
+  border-color: var(--colorNeutralStrokeDisabled);
+  color: var(--colorNeutralForegroundDisabled);
+}
+
+/* Button sizes */
+.fluent-btn--small {
+  min-height: 24px;
+  padding: var(--spacingVerticalXXS) var(--spacingHorizontalS);
+  font-size: var(--fontSizeBase200);
+  line-height: var(--lineHeightBase200);
+}
+
+.fluent-btn--large {
+  min-height: 40px;
+  padding: var(--spacingVerticalS) var(--spacingHorizontalL);
+  font-size: var(--fontSizeBase400);
+  line-height: var(--lineHeightBase400);
+}
+
+/* Button — icon only */
+.fluent-btn--icon {
+  min-width: 32px;
+  padding: var(--spacingVerticalSNudge);
+}
+
+.fluent-btn--icon.fluent-btn--small {
+  min-width: 24px;
+  padding: var(--spacingVerticalXXS);
+}
+
+.fluent-btn--icon.fluent-btn--large {
+  min-width: 40px;
+  padding: var(--spacingVerticalS);
+}
+
+/* ==========================================================================
+   FORM CONTROLS — .fluent-input, .fluent-select, .fluent-textarea
+   ========================================================================== */
+
+.fluent-input,
+.fluent-select,
+.fluent-textarea {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  padding: var(--spacingVerticalSNudge) var(--spacingHorizontalM);
+  border: var(--strokeWidthThin) solid var(--colorNeutralStroke1);
+  border-bottom: var(--strokeWidthThick) solid var(--colorNeutralStrokeAccessible);
+  border-radius: var(--borderRadiusMedium);
+  background-color: var(--colorNeutralBackground1);
+  color: var(--colorNeutralForeground1);
+  font-family: var(--fontFamilyBase);
+  font-size: var(--fontSizeBase300);
+  font-weight: var(--fontWeightRegular);
+  line-height: var(--lineHeightBase300);
+  outline: none;
+  transition:
+    border-color var(--durationFast) var(--curveEasyEase),
+    box-shadow var(--durationFast) var(--curveEasyEase);
+}
+
+.fluent-input::placeholder,
+.fluent-textarea::placeholder {
+  color: var(--colorNeutralForeground4);
+}
+
+.fluent-input:hover,
+.fluent-select:hover,
+.fluent-textarea:hover {
+  border-color: var(--colorNeutralStroke1Hover);
+  border-bottom-color: var(--colorNeutralStrokeAccessibleHover);
+}
+
+.fluent-input:focus,
+.fluent-select:focus,
+.fluent-textarea:focus {
+  border-color: var(--colorNeutralStroke1);
+  border-bottom-color: var(--colorCompoundBrandStroke);
+  box-shadow: 0 var(--strokeWidthThin) 0 0 var(--colorCompoundBrandStroke);
+}
+
+.fluent-input:focus-visible,
+.fluent-select:focus-visible,
+.fluent-textarea:focus-visible {
+  border-color: var(--colorNeutralStroke1);
+  border-bottom-color: var(--colorCompoundBrandStroke);
+  outline: var(--strokeWidthThick) solid transparent;
+}
+
+.fluent-input:disabled,
+.fluent-select:disabled,
+.fluent-textarea:disabled {
+  background-color: var(--colorNeutralBackgroundDisabled);
+  border-color: var(--colorNeutralStrokeDisabled);
+  border-bottom-color: var(--colorNeutralStrokeDisabled);
+  color: var(--colorNeutralForegroundDisabled);
+  cursor: not-allowed;
+}
+
+/* Error states */
+.has-error .fluent-input,
+.has-error .fluent-select,
+.has-error .fluent-textarea,
+.fluent-input.has-error,
+.fluent-select.has-error,
+.fluent-textarea.has-error {
+  border-color: var(--colorStatusDangerBorder2);
+  border-bottom-color: var(--colorStatusDangerBorder2);
+}
+
+.has-error .fluent-input:focus,
+.has-error .fluent-select:focus,
+.has-error .fluent-textarea:focus,
+.fluent-input.has-error:focus,
+.fluent-select.has-error:focus,
+.fluent-textarea.has-error:focus {
+  border-bottom-color: var(--colorStatusDangerBorderActive);
+  box-shadow: 0 var(--strokeWidthThin) 0 0 var(--colorStatusDangerBorderActive);
+}
+
+/* Select specific */
+.fluent-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23424242' d='M2.22 4.47a.75.75 0 0 1 1.06 0L6 7.19l2.72-2.72a.75.75 0 0 1 1.06 1.06L6.53 8.78a.75.75 0 0 1-1.06 0L2.22 5.53a.75.75 0 0 1 0-1.06z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacingHorizontalM) center;
+  padding-right: var(--spacingHorizontalXXXL);
+}
+
+/* Textarea specific */
+.fluent-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* ==========================================================================
+   FORM GROUP — .fluent-form-group
+   ========================================================================== */
+
+.fluent-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacingVerticalXS);
+  margin-bottom: var(--spacingVerticalL);
+}
+
+.fluent-form-group label,
+.fluent-label {
+  display: block;
+  font-size: var(--fontSizeBase300);
+  font-weight: var(--fontWeightMedium);
+  line-height: var(--lineHeightBase300);
+  color: var(--colorNeutralForeground1);
+  padding-bottom: var(--spacingVerticalXXS);
+}
+
+.fluent-label--required::after {
+  content: " *";
+  color: var(--colorPaletteRedForeground1);
+}
+
+.fluent-form-group .fluent-helper-text {
+  font-size: var(--fontSizeBase200);
+  line-height: var(--lineHeightBase200);
+  color: var(--colorNeutralForeground3);
+  margin: 0;
+}
+
+.fluent-form-group .fluent-error-text {
+  font-size: var(--fontSizeBase200);
+  line-height: var(--lineHeightBase200);
+  color: var(--colorStatusDangerForeground1);
+  margin: 0;
+  display: none;
+}
+
+.fluent-form-group.has-error .fluent-error-text {
+  display: block;
+}
+
+.fluent-form-group.has-error .fluent-helper-text {
+  display: none;
+}
+
+/* ==========================================================================
+   CARD — .fluent-card
+   ========================================================================== */
+
+.fluent-card {
+  background-color: var(--colorNeutralCardBackground);
+  border: var(--strokeWidthThin) solid var(--colorTransparentBackground);
+  border-radius: var(--borderRadiusLarge);
+  padding: var(--spacingVerticalL) var(--spacingHorizontalL);
+  transition:
+    background-color var(--durationFast) var(--curveEasyEase),
+    box-shadow var(--durationFast) var(--curveEasyEase),
+    border-color var(--durationFast) var(--curveEasyEase);
+}
+
+.fluent-card:hover {
+  background-color: var(--colorNeutralCardBackgroundHover);
+}
+
+.fluent-card:active {
+  background-color: var(--colorNeutralCardBackgroundPressed);
+}
+
+.fluent-card:focus-visible {
+  outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+  outline-offset: calc(-1 * var(--strokeWidthThin));
+}
+
+/* Card — Elevated */
+.fluent-card--elevated {
+  box-shadow: var(--shadow4);
+  border-color: transparent;
+}
+
+.fluent-card--elevated:hover {
+  box-shadow: var(--shadow8);
+}
+
+.fluent-card--elevated:active {
+  box-shadow: var(--shadow2);
+}
+
+/* Card — Outline */
+.fluent-card--outline {
+  border-color: var(--colorNeutralStroke1);
+  box-shadow: none;
+}
+
+.fluent-card--outline:hover {
+  border-color: var(--colorNeutralStroke1Hover);
+}
+
+.fluent-card--outline:active {
+  border-color: var(--colorNeutralStroke1Pressed);
+}
+
+/* Card inner structure */
+.fluent-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacingHorizontalS);
+  margin-bottom: var(--spacingVerticalS);
+}
+
+.fluent-card__title {
+  font-size: var(--fontSizeBase400);
+  font-weight: var(--fontWeightSemibold);
+  line-height: var(--lineHeightBase400);
+  color: var(--colorNeutralForeground1);
+  margin: 0;
+}
+
+.fluent-card__body {
+  color: var(--colorNeutralForeground2);
+  font-size: var(--fontSizeBase300);
+  line-height: var(--lineHeightBase300);
+}
+
+.fluent-card__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacingHorizontalS);
+  margin-top: var(--spacingVerticalM);
+  padding-top: var(--spacingVerticalM);
+  border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2);
+}
+
+/* ==========================================================================
+   BADGE — .fluent-badge
+   ========================================================================== */
+
+.fluent-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacingHorizontalXXS);
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--spacingHorizontalXS);
+  border-radius: var(--borderRadiusCircular);
+  font-size: var(--fontSizeBase200);
+  font-weight: var(--fontWeightSemibold);
+  line-height: var(--lineHeightBase200);
+  background-color: var(--colorBrandBackground);
+  color: var(--colorNeutralForegroundOnBrand);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.fluent-badge--danger {
+  background-color: var(--colorStatusDangerBackground3);
+  color: var(--colorNeutralForegroundStaticInverted);
+}
+
+.fluent-badge--success {
+  background-color: var(--colorStatusSuccessBackground3);
+  color: var(--colorNeutralForegroundStaticInverted);
+}
+
+.fluent-badge--warning {
+  background-color: var(--colorStatusWarningBackground3);
+  color: var(--colorNeutralForeground1);
+}
+
+.fluent-badge--info {
+  background-color: var(--colorStatusInfoBackground3);
+  color: var(--colorNeutralForegroundStaticInverted);
+}
+
+.fluent-badge--outline {
+  background-color: transparent;
+  border: var(--strokeWidthThin) solid var(--colorBrandStroke1);
+  color: var(--colorBrandForeground1);
+}
+
+.fluent-badge--large {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--spacingHorizontalSNudge);
+  font-size: var(--fontSizeBase200);
+}
+
+.fluent-badge--extra-large {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 var(--spacingHorizontalS);
+  font-size: var(--fontSizeBase300);
+}
+
+/* ==========================================================================
+   TABLE — .fluent-table
+   ========================================================================== */
+
+.fluent-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  background-color: var(--colorNeutralBackground1);
+  font-size: var(--fontSizeBase300);
+  line-height: var(--lineHeightBase300);
+}
+
+.fluent-table th,
+.fluent-table td {
+  padding: var(--spacingVerticalS) var(--spacingHorizontalS);
+  text-align: left;
+  border-bottom: var(--strokeWidthThin) solid var(--colorNeutralStroke2);
+  vertical-align: middle;
+}
+
+.fluent-table th {
+  font-weight: var(--fontWeightSemibold);
+  color: var(--colorNeutralForeground1);
+  background-color: var(--colorNeutralBackground2);
+}
+
+.fluent-table td {
+  color: var(--colorNeutralForeground2);
+}
+
+.fluent-table tr:hover td {
+  background-color: transparent;
+}
+
+.fluent-table tr:active td {
+  background-color: transparent;
+}
+
+.fluent-table tr:focus-visible {
+  outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+  outline-offset: calc(-1 * var(--strokeWidthThick));
+}
+
+/* Table — Striped */
+.fluent-table--striped tbody tr:nth-child(even) td {
+  background-color: var(--colorNeutralBackground2);
+}
+
+/* Table — Hover */
+.fluent-table--hover tbody tr:hover td {
+  background-color: var(--colorNeutralBackground1Hover);
+  cursor: pointer;
+}
+
+.fluent-table--hover tbody tr:active td {
+  background-color: var(--colorNeutralBackground1Pressed);
+}
+
+/* ==========================================================================
+   ALERT — .fluent-alert
+   ========================================================================== */
+
+.fluent-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacingHorizontalS);
+  padding: var(--spacingVerticalM) var(--spacingHorizontalM);
+  border-radius: var(--borderRadiusMedium);
+  border: var(--strokeWidthThin) solid var(--colorNeutralStroke1);
+  background-color: var(--colorNeutralBackground1);
+  color: var(--colorNeutralForeground1);
+  font-size: var(--fontSizeBase300);
+  line-height: var(--lineHeightBase300);
+}
+
+.fluent-alert__icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: var(--spacingVerticalXXS);
+}
+
+.fluent-alert__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.fluent-alert__title {
+  font-weight: var(--fontWeightSemibold);
+  margin-bottom: var(--spacingVerticalXXS);
+}
+
+.fluent-alert__dismiss {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: var(--spacingVerticalXXS) var(--spacingHorizontalXXS);
+  cursor: pointer;
+  color: var(--colorNeutralForeground2);
+  border-radius: var(--borderRadiusSmall);
+  transition: background-color var(--durationFast) var(--curveEasyEase);
+}
+
+.fluent-alert__dismiss:hover {
+  background-color: var(--colorSubtleBackgroundHover);
+}
+
+.fluent-alert__dismiss:active {
+  background-color: var(--colorSubtleBackgroundPressed);
+}
+
+.fluent-alert__dismiss:focus-visible {
+  outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+}
+
+/* Alert — Error */
+.fluent-alert--error {
+  background-color: var(--colorStatusDangerBackground1);
+  border-color: var(--colorStatusDangerBorder1);
+  color: var(--colorStatusDangerForeground1);
+}
+
+/* Alert — Success */
+.fluent-alert--success {
+  background-color: var(--colorStatusSuccessBackground1);
+  border-color: var(--colorStatusSuccessBorder1);
+  color: var(--colorStatusSuccessForeground1);
+}
+
+/* Alert — Warning */
+.fluent-alert--warning {
+  background-color: var(--colorStatusWarningBackground1);
+  border-color: var(--colorStatusWarningBorder1);
+  color: var(--colorStatusWarningForeground1);
+}
+
+/* Alert — Info */
+.fluent-alert--info {
+  background-color: var(--colorStatusInfoBackground1);
+  border-color: var(--colorStatusInfoBorder1);
+  color: var(--colorStatusInfoForeground1);
+}
+
+/* ==========================================================================
+   DIALOG — .fluent-dialog
+   ========================================================================== */
+
+.fluent-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: var(--colorBackgroundOverlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--zIndexOverlay);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--durationNormal) var(--curveDecelerateMid),
+    visibility var(--durationNormal) var(--curveDecelerateMid);
+}
+
+.fluent-dialog-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.fluent-dialog {
+  background-color: var(--colorNeutralBackground1);
+  border-radius: var(--borderRadiusXLarge);
+  box-shadow: var(--shadow64);
+  padding: var(--spacingVerticalXXL) var(--spacingHorizontalXXL);
+  min-width: 320px;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: translateY(var(--spacingVerticalXXL));
+  transition: transform var(--durationNormal) var(--curveDecelerateMid);
+  z-index: calc(var(--zIndexOverlay) + 1);
+}
+
+.fluent-dialog-overlay.is-open .fluent-dialog {
+  transform: translateY(0);
+}
+
+.fluent-dialog:focus-visible {
+  outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+}
+
+.fluent-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacingVerticalL);
+}
+
+.fluent-dialog__title {
+  font-size: var(--fontSizeBase500);
+  font-weight: var(--fontWeightSemibold);
+  line-height: var(--lineHeightBase500);
+  color: var(--colorNeutralForeground1);
+  margin: 0;
+}
+
+.fluent-dialog__body {
+  margin-bottom: var(--spacingVerticalL);
+  color: var(--colorNeutralForeground2);
+  font-size: var(--fontSizeBase300);
+  line-height: var(--lineHeightBase300);
+}
+
+.fluent-dialog__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacingHorizontalS);
+}
+
+/* ==========================================================================
+   CHIP / TAG — .fluent-chip, .fluent-tag
+   ========================================================================== */
+
+.fluent-chip,
+.fluent-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacingHorizontalXXS);
+  height: 24px;
+  padding: 0 var(--spacingHorizontalS);
+  border: var(--strokeWidthThin) solid var(--colorNeutralStroke1);
+  border-radius: var(--borderRadiusMedium);
+  background-color: var(--colorNeutralBackground1);
+  color: var(--colorNeutralForeground2);
+  font-size: var(--fontSizeBase200);
+  font-weight: var(--fontWeightRegular);
+  line-height: var(--lineHeightBase200);
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+  transition:
+    background-color var(--durationFast) var(--curveEasyEase),
+    border-color var(--durationFast) var(--curveEasyEase),
+    color var(--durationFast) var(--curveEasyEase);
+}
+
+.fluent-chip:hover,
+.fluent-tag:hover {
+  background-color: var(--colorNeutralBackground1Hover);
+  border-color: var(--colorNeutralStroke1Hover);
+}
+
+.fluent-chip:active,
+.fluent-tag:active {
+  background-color: var(--colorNeutralBackground1Pressed);
+  border-color: var(--colorNeutralStroke1Pressed);
+}
+
+.fluent-chip:focus-visible,
+.fluent-tag:focus-visible {
+  outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+  outline-offset: var(--strokeWidthThin);
+}
+
+.fluent-chip:disabled,
+.fluent-tag:disabled,
+.fluent-chip[disabled],
+.fluent-tag[disabled] {
+  background-color: var(--colorNeutralBackgroundDisabled);
+  border-color: var(--colorNeutralStrokeDisabled);
+  color: var(--colorNeutralForegroundDisabled);
+  cursor: not-allowed;
+}
+
+/* Chip — selected / brand */
+.fluent-chip--selected,
+.fluent-tag--brand {
+  background-color: var(--colorBrandBackground2);
+  border-color: var(--colorBrandStroke2);
+  color: var(--colorBrandForeground1);
+}
+
+.fluent-chip--selected:hover,
+.fluent-tag--brand:hover {
+  background-color: var(--colorBrandBackground2Hover);
+  border-color: var(--colorBrandStroke2Hover);
+}
+
+.fluent-chip--selected:active,
+.fluent-tag--brand:active {
+  background-color: var(--colorBrandBackground2Pressed);
+  border-color: var(--colorBrandStroke2Pressed);
+}
+
+/* Chip / Tag dismiss button */
+.fluent-chip__dismiss,
+.fluent-tag__dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  margin-left: var(--spacingHorizontalXXS);
+  border: none;
+  border-radius: var(--borderRadiusSmall);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color var(--durationFast) var(--curveEasyEase);
+}
+
+.fluent-chip__dismiss:hover,
+.fluent-tag__dismiss:hover {
+  background-color: var(--colorSubtleBackgroundHover);
+}
+
+.fluent-chip__dismiss:active,
+.fluent-tag__dismiss:active {
+  background-color: var(--colorSubtleBackgroundPressed);
+}
+
+.fluent-chip__dismiss:focus-visible,
+.fluent-tag__dismiss:focus-visible {
+  outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+}
+
+/* Tag — circular (pill shape) */
+.fluent-tag--circular {
+  border-radius: var(--borderRadiusCircular);
+}
+
+/* Tag size variants */
+.fluent-tag--small {
+  height: 20px;
+  font-size: var(--fontSizeBase100);
+  padding: 0 var(--spacingHorizontalXS);
+}
+
+/* ==========================================================================
+   AVATAR — .fluent-avatar
+   ========================================================================== */
+
+.fluent-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--borderRadiusCircular);
+  background-color: var(--colorBrandBackground2);
+  color: var(--colorBrandForeground1);
+  font-size: var(--fontSizeBase300);
+  font-weight: var(--fontWeightSemibold);
+  line-height: 1;
+  overflow: hidden;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.fluent-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--borderRadiusCircular);
+}
+
+.fluent-avatar--16 { width: 16px; height: 16px; font-size: var(--fontSizeBase100); }
+.fluent-avatar--20 { width: 20px; height: 20px; font-size: var(--fontSizeBase100); }
+.fluent-avatar--24 { width: 24px; height: 24px; font-size: var(--fontSizeBase100); }
+.fluent-avatar--28 { width: 28px; height: 28px; font-size: var(--fontSizeBase200); }
+.fluent-avatar--32 { width: 32px; height: 32px; font-size: var(--fontSizeBase300); }
+.fluent-avatar--36 { width: 36px; height: 36px; font-size: var(--fontSizeBase300); }
+.fluent-avatar--40 { width: 40px; height: 40px; font-size: var(--fontSizeBase300); }
+.fluent-avatar--48 { width: 48px; height: 48px; font-size: var(--fontSizeBase400); }
+.fluent-avatar--56 { width: 56px; height: 56px; font-size: var(--fontSizeBase500); }
+.fluent-avatar--64 { width: 64px; height: 64px; font-size: var(--fontSizeBase500); }
+.fluent-avatar--72 { width: 72px; height: 72px; font-size: var(--fontSizeBase600); }
+.fluent-avatar--96 { width: 96px; height: 96px; font-size: var(--fontSizeHero700); }
+.fluent-avatar--120 { width: 120px; height: 120px; font-size: var(--fontSizeHero800); }
+.fluent-avatar--128 { width: 128px; height: 128px; font-size: var(--fontSizeHero900); }
+
+/* Avatar — status ring */
+.fluent-avatar--active {
+  box-shadow: 0 0 0 var(--strokeWidthThick) var(--colorBrandStroke1);
+}
+
+/* ==========================================================================
+   TOOLTIP — .fluent-tooltip
+   ========================================================================== */
+
+.fluent-tooltip {
+  position: absolute;
+  z-index: var(--zIndexFloating);
+  max-width: 240px;
+  padding: var(--spacingVerticalXS) var(--spacingHorizontalS);
+  border-radius: var(--borderRadiusMedium);
+  background-color: var(--colorNeutralBackgroundStatic);
+  color: var(--colorNeutralForegroundStaticInverted);
+  font-size: var(--fontSizeBase200);
+  font-weight: var(--fontWeightRegular);
+  line-height: var(--lineHeightBase200);
+  box-shadow: var(--shadow8);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--durationFast) var(--curveDecelerateMid),
+    visibility var(--durationFast) var(--curveDecelerateMid);
+}
+
+.fluent-tooltip.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Tooltip arrow */
+.fluent-tooltip::before {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: var(--colorNeutralBackgroundStatic);
+  transform: rotate(45deg);
+}
+
+.fluent-tooltip--top::before {
+  bottom: -4px;
+  left: 50%;
+  margin-left: -4px;
+}
+
+.fluent-tooltip--bottom::before {
+  top: -4px;
+  left: 50%;
+  margin-left: -4px;
+}
+
+/* ==========================================================================
+   SPINNER — .fluent-spinner (CSS-only)
+   ========================================================================== */
+
+@keyframes fluent-spinner-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.fluent-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+
+.fluent-spinner::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: var(--strokeWidthThick) solid var(--colorNeutralStroke2);
+  border-top-color: var(--colorCompoundBrandStroke);
+  border-radius: var(--borderRadiusCircular);
+  animation: fluent-spinner-rotate var(--durationSlow) linear infinite;
+}
+
+.fluent-spinner--tiny { width: 16px; height: 16px; }
+.fluent-spinner--tiny::before { border-width: var(--strokeWidthThin); }
+.fluent-spinner--extra-small { width: 20px; height: 20px; }
+.fluent-spinner--small { width: 24px; height: 24px; }
+.fluent-spinner--medium { width: 28px; height: 28px; }
+.fluent-spinner--large { width: 36px; height: 36px; }
+.fluent-spinner--large::before { border-width: var(--strokeWidthThicker); }
+.fluent-spinner--extra-large { width: 44px; height: 44px; }
+.fluent-spinner--extra-large::before { border-width: var(--strokeWidthThicker); }
+.fluent-spinner--huge { width: 56px; height: 56px; }
+.fluent-spinner--huge::before { border-width: var(--strokeWidthThickest); }
+
+/* Spinner — inverted (on dark bg) */
+.fluent-spinner--inverted::before {
+  border-color: rgba(255, 255, 255, 0.2);
+  border-top-color: var(--colorNeutralForegroundStaticInverted);
+}
+
+/* Spinner label */
+.fluent-spinner-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacingHorizontalS);
+  color: var(--colorNeutralForeground2);
+  font-size: var(--fontSizeBase300);
+  line-height: var(--lineHeightBase300);
+}
+
+/* ==========================================================================
+   SHIMMER / SKELETON — .fluent-shimmer (CSS-only)
+   ========================================================================== */
+
+@keyframes fluent-shimmer-wave {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.fluent-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--colorNeutralBackground3);
+  border-radius: var(--borderRadiusMedium);
+}
+
+.fluent-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--colorNeutralBackgroundAlpha) 50%,
+    transparent 100%
+  );
+  animation: fluent-shimmer-wave 1.5s ease-in-out infinite;
+}
+
+.fluent-shimmer--text {
+  height: var(--lineHeightBase300);
+  width: 100%;
+  margin-bottom: var(--spacingVerticalS);
+}
+
+.fluent-shimmer--title {
+  height: var(--lineHeightBase500);
+  width: 60%;
+  margin-bottom: var(--spacingVerticalM);
+}
+
+.fluent-shimmer--circle {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--borderRadiusCircular);
+}
+
+.fluent-shimmer--rect {
+  width: 100%;
+  height: 120px;
+}
+
+/* ==========================================================================
+   PAGINATION — .fluent-pagination
+   ========================================================================== */
+
+.fluent-pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--spacingHorizontalXXS);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fluent-pagination__item {
+  display: inline-flex;
+}
+
+.fluent-pagination__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 var(--spacingHorizontalXS);
+  border: var(--strokeWidthThin) solid transparent;
+  border-radius: var(--borderRadiusMedium);
+  background-color: var(--colorSubtleBackground);
+  color: var(--colorNeutralForeground2);
+  font-size: var(--fontSizeBase300);
+  font-weight: var(--fontWeightRegular);
+  line-height: var(--lineHeightBase300);
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--durationFast) var(--curveEasyEase),
+    color var(--durationFast) var(--curveEasyEase),
+    border-color var(--durationFast) var(--curveEasyEase);
+}
+
+.fluent-pagination__link:hover {
+  background-color: var(--colorSubtleBackgroundHover);
+  color: var(--colorNeutralForeground1);
+}
+
+.fluent-pagination__link:active {
+  background-color: var(--colorSubtleBackgroundPressed);
+  color: var(--colorNeutralForeground1);
+}
+
+.fluent-pagination__link:focus-visible {
+  outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+  outline-offset: var(--strokeWidthThin);
+}
+
+.fluent-pagination__link.is-active,
+.fluent-pagination__link--active {
+  background-color: var(--colorBrandBackground);
+  color: var(--colorNeutralForegroundOnBrand);
+  font-weight: var(--fontWeightSemibold);
+}
+
+.fluent-pagination__link.is-active:hover,
+.fluent-pagination__link--active:hover {
+  background-color: var(--colorBrandBackgroundHover);
+}
+
+.fluent-pagination__link.is-active:active,
+.fluent-pagination__link--active:active {
+  background-color: var(--colorBrandBackgroundPressed);
+}
+
+.fluent-pagination__link.is-disabled,
+.fluent-pagination__link[disabled] {
+  color: var(--colorNeutralForegroundDisabled);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   BREADCRUMB — .fluent-breadcrumb
+   ========================================================================== */
+
+.fluent-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacingHorizontalXXS);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--fontSizeBase300);
+  line-height: var(--lineHeightBase300);
+}
+
+.fluent-breadcrumb__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacingHorizontalXXS);
+}
+
+.fluent-breadcrumb__item + .fluent-breadcrumb__item::before {
+  content: "/";
+  color: var(--colorNeutralForeground3);
+  margin: 0 var(--spacingHorizontalXXS);
+}
+
+.fluent-breadcrumb__link {
+  color: var(--colorBrandForegroundLink);
+  text-decoration: none;
+  padding: var(--spacingVerticalXXS) var(--spacingHorizontalXS);
+  border-radius: var(--borderRadiusSmall);
+  transition:
+    color var(--durationFast) var(--curveEasyEase),
+    background-color var(--durationFast) var(--curveEasyEase);
+}
+
+.fluent-breadcrumb__link:hover {
+  color: var(--colorBrandForegroundLinkHover);
+  background-color: var(--colorSubtleBackgroundHover);
+}
+
+.fluent-breadcrumb__link:active {
+  color: var(--colorBrandForegroundLinkPressed);
+  background-color: var(--colorSubtleBackgroundPressed);
+}
+
+.fluent-breadcrumb__link:focus-visible {
+  outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+  outline-offset: var(--strokeWidthThin);
+}
+
+.fluent-breadcrumb__item--current .fluent-breadcrumb__link,
+.fluent-breadcrumb__item.is-current .fluent-breadcrumb__link {
+  color: var(--colorNeutralForeground2);
+  font-weight: var(--fontWeightSemibold);
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   DROPDOWN — .fluent-dropdown
+   ========================================================================== */
+
+.fluent-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.fluent-dropdown__trigger {
+  cursor: pointer;
+}
+
+.fluent-dropdown__menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: var(--zIndexPopup);
+  min-width: 160px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: var(--spacingVerticalXS) 0;
+  margin-top: var(--spacingVerticalXXS);
+  background-color: var(--colorNeutralBackground1);
+  border: var(--strokeWidthThin) solid var(--colorNeutralStroke1);
+  border-radius: var(--borderRadiusMedium);
+  box-shadow: var(--shadow16);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(calc(-1 * var(--spacingVerticalXS)));
+  transition:
+    opacity var(--durationFast) var(--curveDecelerateMid),
+    visibility var(--durationFast) var(--curveDecelerateMid),
+    transform var(--durationFast) var(--curveDecelerateMid);
+}
+
+.fluent-dropdown.is-open .fluent-dropdown__menu,
+.fluent-dropdown__menu.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.fluent-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacingHorizontalS);
+  width: 100%;
+  padding: var(--spacingVerticalSNudge) var(--spacingHorizontalS);
+  border: none;
+  background: none;
+  color: var(--colorNeutralForeground2);
+  font-family: var(--fontFamilyBase);
+  font-size: var(--fontSizeBase300);
+  line-height: var(--lineHeightBase300);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--durationFast) var(--curveEasyEase),
+    color var(--durationFast) var(--curveEasyEase);
+}
+
+.fluent-dropdown__item:hover {
+  background-color: var(--colorNeutralBackground1Hover);
+  color: var(--colorNeutralForeground1Hover);
+}
+
+.fluent-dropdown__item:active {
+  background-color: var(--colorNeutralBackground1Pressed);
+  color: var(--colorNeutralForeground1Pressed);
+}
+
+.fluent-dropdown__item:focus-visible {
+  outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+  outline-offset: calc(-1 * var(--strokeWidthThick));
+}
+
+.fluent-dropdown__item:disabled,
+.fluent-dropdown__item[disabled] {
+  color: var(--colorNeutralForegroundDisabled);
+  cursor: not-allowed;
+}
+
+.fluent-dropdown__item.is-selected {
+  background-color: var(--colorNeutralBackground1Selected);
+  color: var(--colorNeutralForeground1Selected);
+  font-weight: var(--fontWeightSemibold);
+}
+
+.fluent-dropdown__divider {
+  height: 0;
+  margin: var(--spacingVerticalXS) 0;
+  border: none;
+  border-top: var(--strokeWidthThin) solid var(--colorNeutralStroke2);
+}
+
+.fluent-dropdown__header {
+  padding: var(--spacingVerticalXS) var(--spacingHorizontalS);
+  color: var(--colorNeutralForeground3);
+  font-size: var(--fontSizeBase200);
+  font-weight: var(--fontWeightSemibold);
+  line-height: var(--lineHeightBase200);
+}
+
+/* ==========================================================================
+   SWITCH / TOGGLE — .fluent-switch
+   ========================================================================== */
+
+.fluent-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacingHorizontalS);
+  cursor: pointer;
+  user-select: none;
+}
+
+.fluent-switch__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.fluent-switch__indicator {
+  position: relative;
+  width: 40px;
+  height: 20px;
+  border: var(--strokeWidthThin) solid var(--colorNeutralStrokeAccessible);
+  border-radius: var(--borderRadiusCircular);
+  background-color: var(--colorNeutralBackground1);
+  transition:
+    background-color var(--durationNormal) var(--curveEasyEase),
+    border-color var(--durationNormal) var(--curveEasyEase);
+  flex-shrink: 0;
+}
+
+.fluent-switch__indicator::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--borderRadiusCircular);
+  background-color: var(--colorNeutralStrokeAccessible);
+  transition:
+    transform var(--durationNormal) var(--curveEasyEase),
+    background-color var(--durationNormal) var(--curveEasyEase);
+}
+
+/* Switch — hover */
+.fluent-switch:hover .fluent-switch__indicator {
+  border-color: var(--colorNeutralStrokeAccessibleHover);
+}
+
+.fluent-switch:hover .fluent-switch__indicator::before {
+  background-color: var(--colorNeutralStrokeAccessibleHover);
+}
+
+/* Switch — active/pressed */
+.fluent-switch:active .fluent-switch__indicator {
+  border-color: var(--colorNeutralStrokeAccessiblePressed);
+}
+
+.fluent-switch:active .fluent-switch__indicator::before {
+  background-color: var(--colorNeutralStrokeAccessiblePressed);
+}
+
+/* Switch — checked */
+.fluent-switch__input:checked + .fluent-switch__indicator {
+  background-color: var(--colorCompoundBrandBackground);
+  border-color: var(--colorCompoundBrandBackground);
+}
+
+.fluent-switch__input:checked + .fluent-switch__indicator::before {
+  transform: translateX(20px);
+  background-color: var(--colorNeutralForegroundOnBrand);
+}
+
+/* Switch — checked hover */
+.fluent-switch:hover .fluent-switch__input:checked + .fluent-switch__indicator {
+  background-color: var(--colorCompoundBrandBackgroundHover);
+  border-color: var(--colorCompoundBrandBackgroundHover);
+}
+
+/* Switch — checked active */
+.fluent-switch:active .fluent-switch__input:checked + .fluent-switch__indicator {
+  background-color: var(--colorCompoundBrandBackgroundPressed);
+  border-color: var(--colorCompoundBrandBackgroundPressed);
+}
+
+/* Switch — focus */
+.fluent-switch__input:focus-visible + .fluent-switch__indicator {
+  outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+  outline-offset: var(--strokeWidthThin);
+}
+
+/* Switch — disabled */
+.fluent-switch__input:disabled + .fluent-switch__indicator {
+  border-color: var(--colorNeutralStrokeDisabled);
+  background-color: var(--colorNeutralBackgroundDisabled);
+  cursor: not-allowed;
+}
+
+.fluent-switch__input:disabled + .fluent-switch__indicator::before {
+  background-color: var(--colorNeutralForegroundDisabled);
+}
+
+.fluent-switch:has(.fluent-switch__input:disabled) {
+  cursor: not-allowed;
+}
+
+.fluent-switch__label {
+  font-size: var(--fontSizeBase300);
+  line-height: var(--lineHeightBase300);
+  color: var(--colorNeutralForeground1);
+}
+
+.fluent-switch__input:disabled ~ .fluent-switch__label {
+  color: var(--colorNeutralForegroundDisabled);
+}
+
+/* ==========================================================================
+   PROGRESS — .fluent-progress
+   ========================================================================== */
+
+.fluent-progress {
+  width: 100%;
+  height: var(--strokeWidthThick);
+  background-color: var(--colorNeutralBackground6);
+  border-radius: var(--borderRadiusCircular);
+  overflow: hidden;
+}
+
+.fluent-progress__bar {
+  height: 100%;
+  background-color: var(--colorCompoundBrandBackground);
+  border-radius: var(--borderRadiusCircular);
+  transition: width var(--durationNormal) var(--curveDecelerateMid);
+}
+
+/* Progress — thicker */
+.fluent-progress--thick {
+  height: var(--spacingVerticalXS);
+}
+
+/* Progress — success */
+.fluent-progress--success .fluent-progress__bar {
+  background-color: var(--colorStatusSuccessBackground3);
+}
+
+/* Progress — warning */
+.fluent-progress--warning .fluent-progress__bar {
+  background-color: var(--colorStatusWarningBackground3);
+}
+
+/* Progress — danger */
+.fluent-progress--danger .fluent-progress__bar {
+  background-color: var(--colorStatusDangerBackground3);
+}
+
+/* Progress — indeterminate */
+@keyframes fluent-progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+.fluent-progress--indeterminate .fluent-progress__bar {
+  width: 33%;
+  animation: fluent-progress-indeterminate 1.5s var(--curveEasyEase) infinite;
+}
+
+/* ==========================================================================
+   CHECKBOX (bonus component)
+   ========================================================================== */
+
+.fluent-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacingHorizontalS);
+  cursor: pointer;
+  user-select: none;
+}
+
+.fluent-checkbox__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.fluent-checkbox__indicator {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border: var(--strokeWidthThin) solid var(--colorNeutralStrokeAccessible);
+  border-radius: var(--borderRadiusSmall);
+  background-color: var(--colorNeutralBackground1);
+  flex-shrink: 0;
+  transition:
+    background-color var(--durationFast) var(--curveEasyEase),
+    border-color var(--durationFast) var(--curveEasyEase);
+}
+
+.fluent-checkbox:hover .fluent-checkbox__indicator {
+  border-color: var(--colorNeutralStrokeAccessibleHover);
+}
+
+.fluent-checkbox:active .fluent-checkbox__indicator {
+  border-color: var(--colorNeutralStrokeAccessiblePressed);
+}
+
+.fluent-checkbox__input:checked + .fluent-checkbox__indicator {
+  background-color: var(--colorCompoundBrandBackground);
+  border-color: var(--colorCompoundBrandBackground);
+}
+
+.fluent-checkbox__input:checked + .fluent-checkbox__indicator::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 5px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--colorNeutralForegroundOnBrand);
+  border-width: 0 var(--strokeWidthThick) var(--strokeWidthThick) 0;
+  transform: rotate(45deg);
+}
+
+.fluent-checkbox__input:focus-visible + .fluent-checkbox__indicator {
+  outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+  outline-offset: var(--strokeWidthThin);
+}
+
+.fluent-checkbox__input:disabled + .fluent-checkbox__indicator {
+  border-color: var(--colorNeutralStrokeDisabled);
+  background-color: var(--colorNeutralBackgroundDisabled);
+}
+
+.fluent-checkbox:has(.fluent-checkbox__input:disabled) {
+  cursor: not-allowed;
+}
+
+.fluent-checkbox__input:disabled ~ .fluent-checkbox__label {
+  color: var(--colorNeutralForegroundDisabled);
+}
+
+/* ==========================================================================
+   RADIO (bonus component)
+   ========================================================================== */
+
+.fluent-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacingHorizontalS);
+  cursor: pointer;
+  user-select: none;
+}
+
+.fluent-radio__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.fluent-radio__indicator {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border: var(--strokeWidthThin) solid var(--colorNeutralStrokeAccessible);
+  border-radius: var(--borderRadiusCircular);
+  background-color: var(--colorNeutralBackground1);
+  flex-shrink: 0;
+  transition:
+    background-color var(--durationFast) var(--curveEasyEase),
+    border-color var(--durationFast) var(--curveEasyEase);
+}
+
+.fluent-radio:hover .fluent-radio__indicator {
+  border-color: var(--colorNeutralStrokeAccessibleHover);
+}
+
+.fluent-radio:active .fluent-radio__indicator {
+  border-color: var(--colorNeutralStrokeAccessiblePressed);
+}
+
+.fluent-radio__input:checked + .fluent-radio__indicator {
+  border-color: var(--colorCompoundBrandStroke);
+}
+
+.fluent-radio__input:checked + .fluent-radio__indicator::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--borderRadiusCircular);
+  background-color: var(--colorCompoundBrandBackground);
+}
+
+.fluent-radio__input:focus-visible + .fluent-radio__indicator {
+  outline: var(--strokeWidthThick) solid var(--colorStrokeFocus2);
+  outline-offset: var(--strokeWidthThin);
+}
+
+.fluent-radio__input:disabled + .fluent-radio__indicator {
+  border-color: var(--colorNeutralStrokeDisabled);
+  background-color: var(--colorNeutralBackgroundDisabled);
+}
+
+.fluent-radio:has(.fluent-radio__input:disabled) {
+  cursor: not-allowed;
+}
+
+.fluent-radio__input:disabled ~ .fluent-radio__label {
+  color: var(--colorNeutralForegroundDisabled);
+}
+
+/* ==========================================================================
+   TYPOGRAPHY UTILITY CLASSES
+   ========================================================================== */
+
+.fluent-text-caption1 {
+  font-size: var(--fontSizeBase100);
+  font-weight: var(--fontWeightRegular);
+  line-height: var(--lineHeightBase100);
+}
+
+.fluent-text-caption2 {
+  font-size: var(--fontSizeBase200);
+  font-weight: var(--fontWeightRegular);
+  line-height: var(--lineHeightBase200);
+}
+
+.fluent-text-body1 {
+  font-size: var(--fontSizeBase300);
+  font-weight: var(--fontWeightRegular);
+  line-height: var(--lineHeightBase300);
+}
+
+.fluent-text-body2 {
+  font-size: var(--fontSizeBase400);
+  font-weight: var(--fontWeightRegular);
+  line-height: var(--lineHeightBase400);
+}
+
+.fluent-text-subtitle1 {
+  font-size: var(--fontSizeBase500);
+  font-weight: var(--fontWeightSemibold);
+  line-height: var(--lineHeightBase500);
+}
+
+.fluent-text-subtitle2 {
+  font-size: var(--fontSizeBase400);
+  font-weight: var(--fontWeightSemibold);
+  line-height: var(--lineHeightBase400);
+}
+
+.fluent-text-title1 {
+  font-size: var(--fontSizeHero800);
+  font-weight: var(--fontWeightSemibold);
+  line-height: var(--lineHeightHero800);
+}
+
+.fluent-text-title2 {
+  font-size: var(--fontSizeHero700);
+  font-weight: var(--fontWeightSemibold);
+  line-height: var(--lineHeightHero700);
+}
+
+.fluent-text-title3 {
+  font-size: var(--fontSizeBase600);
+  font-weight: var(--fontWeightSemibold);
+  line-height: var(--lineHeightBase600);
+}
+
+.fluent-text-display {
+  font-size: var(--fontSizeHero1000);
+  font-weight: var(--fontWeightBold);
+  line-height: var(--lineHeightHero1000);
+}
+
+.fluent-text-large-title {
+  font-size: var(--fontSizeHero900);
+  font-weight: var(--fontWeightSemibold);
+  line-height: var(--lineHeightHero900);
+}

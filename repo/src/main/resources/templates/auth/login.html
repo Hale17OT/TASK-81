@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Login</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-auth">
+        <div class="fluent-card fluent-auth__card">
+            <div class="fluent-auth__header">
+                <h1 class="fluent-auth__brand">CampusStore</h1>
+                <p class="fluent-auth__subtitle">Sign in to your account</p>
+            </div>
+
+            <!-- Error message -->
+            <div th:if="${param.error}" class="fluent-alert fluent-alert--error" role="alert">
+                <span>Invalid username or password. Please try again.</span>
+            </div>
+
+            <!-- Logout message -->
+            <div th:if="${param.logout}" class="fluent-alert fluent-alert--success" role="alert">
+                <span>You have been logged out successfully.</span>
+            </div>
+
+            <form th:action="@{/login}" method="post" class="fluent-form fluent-auth__form">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                <div class="fluent-form__field">
+                    <label for="username" class="fluent-label">Username</label>
+                    <input type="text" id="username" name="username"
+                           class="fluent-input"
+                           placeholder="Enter your username"
+                           required autofocus/>
+                </div>
+
+                <div class="fluent-form__field">
+                    <label for="password" class="fluent-label">Password</label>
+                    <input type="password" id="password" name="password"
+                           class="fluent-input"
+                           placeholder="Enter your password"
+                           required/>
+                </div>
+
+                <div class="fluent-form__actions">
+                    <button type="submit" class="fluent-button fluent-button--primary fluent-button--full">
+                        Sign In
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

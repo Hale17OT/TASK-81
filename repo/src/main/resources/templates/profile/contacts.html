@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head><title>My Contacts</title></head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-stack" style="gap: var(--spacingVerticalXXL);">
+        <div class="d-flex justify-between items-center">
+            <h1>My Contacts</h1>
+            <a th:href="@{/profile}" class="fluent-btn fluent-btn--outline">Back to Profile</a>
+        </div>
+
+        <div th:if="${successMessage}" class="fluent-banner fluent-banner--success" th:text="${successMessage}">Saved</div>
+
+        <div th:if="${contacts != null and !contacts.isEmpty()}" class="fluent-grid" style="gap: var(--spacingVerticalL);">
+            <div th:each="c : ${contacts}" class="fluent-card fluent-card--outline fluent-col-6">
+                <div class="fluent-card-header d-flex justify-between">
+                    <strong th:text="${c['label']}">Label</strong>
+                    <span th:if="${c['relationship']}" class="fluent-badge" th:text="${c['relationship']}">Relation</span>
+                </div>
+                <div class="fluent-card-body">
+                    <p th:if="${c['name']}"><span class="fluent-label">Name:</span>
+                        <span th:text="${c['name']}">Name</span></p>
+                    <p th:if="${c['email']}"><span class="fluent-label">Email:</span>
+                        <span th:text="${c['email']}">email</span></p>
+                    <p th:if="${c['phoneMasked'] != null and !#strings.isEmpty(c['phoneMasked'])}">
+                        <span class="fluent-label">Phone:</span>
+                        <span th:text="${c['phoneMasked']}">***-***-1234</span></p>
+                    <p th:if="${c['notes']}"><span class="fluent-label">Notes:</span>
+                        <span th:text="${c['notes']}">notes</span></p>
+                </div>
+                <div class="fluent-card-footer d-flex" style="gap: var(--spacingHorizontalS);">
+                    <button type="button" class="fluent-btn fluent-btn--small"
+                            th:attr="data-toggle='edit-' + ${c['id']}"
+                            onclick="var el=document.getElementById('edit-' + this.getAttribute('data-toggle').split('-')[1]); if(el) el.style.display = el.style.display==='none' ? 'block' : 'none';">Edit</button>
+                    <form th:action="@{/profile/contacts/{id}/delete(id=${c['id']})}" method="post" style="display:inline;">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit" class="fluent-btn fluent-btn--danger fluent-btn--small" data-confirm="Delete this contact?">Delete</button>
+                    </form>
+                </div>
+                <div th:id="'edit-' + ${c['id']}" style="display:none;" class="fluent-card-body">
+                    <form th:action="@{/profile/contacts/{id}/update(id=${c['id']})}" method="post" data-prevent-double-submit>
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <div class="fluent-form-group">
+                            <label class="fluent-label">Label</label>
+                            <input type="text" name="label" class="fluent-input" th:value="${c['label']}" maxlength="60" required/>
+                        </div>
+                        <div class="fluent-form-group">
+                            <label class="fluent-label">Relationship</label>
+                            <input type="text" name="relationship" class="fluent-input" th:value="${c['relationship']}" maxlength="60"/>
+                        </div>
+                        <div class="fluent-form-group">
+                            <label class="fluent-label">Name</label>
+                            <input type="text" name="name" class="fluent-input" th:value="${c['name']}" maxlength="200"/>
+                        </div>
+                        <div class="fluent-form-group">
+                            <label class="fluent-label">Email</label>
+                            <input type="email" name="email" class="fluent-input" th:value="${c['email']}" maxlength="200"/>
+                        </div>
+                        <div class="fluent-form-group">
+                            <label class="fluent-label">Phone</label>
+                            <input type="tel" name="phone" class="fluent-input" th:value="${c['phone']}" maxlength="50"/>
+                        </div>
+                        <div class="fluent-form-group">
+                            <label class="fluent-label">Notes</label>
+                            <textarea name="notes" class="fluent-input" maxlength="1000" rows="2" th:text="${c['notes']}"></textarea>
+                        </div>
+                        <button type="submit" class="fluent-btn fluent-btn--primary fluent-btn--small">Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div th:if="${contacts == null or contacts.isEmpty()}" class="empty-state">
+            <p>No contacts added yet. Use contacts to list emergency, guardian, or office references.</p>
+        </div>
+
+        <div class="fluent-card">
+            <div class="fluent-card-header"><h2>Add New Contact</h2></div>
+            <div class="fluent-card-body">
+                <form th:action="@{/profile/contacts}" method="post" data-prevent-double-submit>
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <div class="fluent-form-group">
+                        <label class="fluent-label">Label</label>
+                        <input type="text" name="label" class="fluent-input" placeholder="e.g., Emergency, Guardian" maxlength="60" required/>
+                    </div>
+                    <div class="fluent-form-group">
+                        <label class="fluent-label">Relationship</label>
+                        <input type="text" name="relationship" class="fluent-input" placeholder="e.g., Parent, Spouse, Supervisor" maxlength="60"/>
+                    </div>
+                    <div class="fluent-form-group">
+                        <label class="fluent-label">Name</label>
+                        <input type="text" name="name" class="fluent-input" maxlength="200"/>
+                    </div>
+                    <div class="fluent-grid" style="gap: var(--spacingHorizontalL);">
+                        <div class="fluent-form-group fluent-col-6">
+                            <label class="fluent-label">Email</label>
+                            <input type="email" name="email" class="fluent-input" maxlength="200"/>
+                        </div>
+                        <div class="fluent-form-group fluent-col-6">
+                            <label class="fluent-label">Phone</label>
+                            <input type="tel" name="phone" class="fluent-input" maxlength="50"/>
+                        </div>
+                    </div>
+                    <div class="fluent-form-group">
+                        <label class="fluent-label">Notes</label>
+                        <textarea name="notes" class="fluent-input" maxlength="1000" rows="2"></textarea>
+                    </div>
+                    <button type="submit" class="fluent-btn fluent-btn--primary">Add Contact</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

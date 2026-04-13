@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head><title>My Addresses</title></head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-stack" style="gap: var(--spacingVerticalXXL);">
+        <div class="d-flex justify-between items-center">
+            <h1>My Addresses</h1>
+            <a th:href="@{/profile}" class="fluent-btn fluent-btn--outline">Back to Profile</a>
+        </div>
+
+        <div th:if="${addresses != null and !addresses.isEmpty()}" class="fluent-grid" style="gap: var(--spacingVerticalL);">
+            <div th:each="addr : ${addresses}" class="fluent-card fluent-card--outline fluent-col-6">
+                <div class="fluent-card-header d-flex justify-between">
+                    <strong th:text="${addr.label}">Label</strong>
+                    <span th:if="${addr.isPrimary}" class="fluent-badge fluent-badge--info">Primary</span>
+                </div>
+                <div class="fluent-card-body">
+                    <p th:text="${addr['street']}">Street</p>
+                    <p><span th:text="${addr['city']}">City</span>, <span th:text="${addr['state']}">ST</span> <span th:text="${addr['zipCode']}">00000</span></p>
+                </div>
+                <div class="fluent-card-footer d-flex" style="gap: var(--spacingHorizontalS);">
+                    <form th:action="@{/profile/addresses/{id}/delete(id=${addr['id']})}" method="post" style="display:inline;">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit" class="fluent-btn fluent-btn--danger fluent-btn--small" data-confirm="Delete this address?">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div th:if="${addresses == null or addresses.isEmpty()}" class="empty-state">
+            <p>No addresses added yet.</p>
+        </div>
+
+        <div class="fluent-card">
+            <div class="fluent-card-header"><h2>Add New Address</h2></div>
+            <div class="fluent-card-body">
+                <form th:action="@{/profile/addresses}" method="post" data-prevent-double-submit>
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <div class="fluent-form-group">
+                        <label class="fluent-label">Label</label>
+                        <input type="text" name="label" class="fluent-input" placeholder="e.g., Dorm, Home" required/>
+                    </div>
+                    <div class="fluent-form-group">
+                        <label class="fluent-label">Street</label>
+                        <input type="text" name="street" class="fluent-input" required/>
+                    </div>
+                    <div class="fluent-grid" style="gap: var(--spacingHorizontalL);">
+                        <div class="fluent-form-group fluent-col-4">
+                            <label class="fluent-label">City</label>
+                            <input type="text" name="city" class="fluent-input" required/>
+                        </div>
+                        <div class="fluent-form-group fluent-col-4">
+                            <label class="fluent-label">State</label>
+                            <select name="state" class="fluent-select" required>
+                                <option value="">Select</option>
+                                <option value="AL">AL</option><option value="AK">AK</option><option value="AZ">AZ</option>
+                                <option value="CA">CA</option><option value="CO">CO</option><option value="CT">CT</option>
+                                <option value="FL">FL</option><option value="GA">GA</option><option value="IL">IL</option>
+                                <option value="NY">NY</option><option value="TX">TX</option><option value="WA">WA</option>
+                            </select>
+                        </div>
+                        <div class="fluent-form-group fluent-col-4">
+                            <label class="fluent-label">ZIP Code</label>
+                            <input type="text" name="zipCode" class="fluent-input" pattern="[0-9]{5}(-[0-9]{4})?" required/>
+                        </div>
+                    </div>
+                    <button type="submit" class="fluent-btn fluent-btn--primary">Add Address</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

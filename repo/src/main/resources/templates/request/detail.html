@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Request Detail</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-page fluent-page--request-detail">
+
+        <!-- Back link -->
+        <div class="fluent-breadcrumb">
+            <a th:href="@{/requests/mine}" class="fluent-link fluent-link--back">Back to My Requests</a>
+        </div>
+
+        <div class="fluent-detail">
+            <div class="fluent-detail__main">
+                <!-- Request Header -->
+                <div class="fluent-detail__header">
+                    <h1 class="fluent-heading fluent-heading--lg">
+                        Request #<span th:text="${request.id}">0</span>
+                    </h1>
+                    <span class="fluent-badge fluent-badge--status fluent-badge--lg"
+                          th:text="${request.status}"
+                          th:classappend="'fluent-badge--' + ${request.status.name().toLowerCase()}">PENDING</span>
+                </div>
+
+                <!-- Item Info -->
+                <div class="fluent-detail__section">
+                    <h2 class="fluent-heading fluent-heading--sm">Item</h2>
+                    <div class="fluent-detail__grid">
+                        <div class="fluent-detail__field">
+                            <span class="fluent-label">Item Name</span>
+                            <a th:href="@{/inventory/{id}(id=${request.item.id})}"
+                               th:text="${request.item.name}"
+                               class="fluent-link">Item Name</a>
+                        </div>
+                        <div class="fluent-detail__field">
+                            <span class="fluent-label">Quantity</span>
+                            <span class="fluent-text" th:text="${request.quantity}">1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Justification -->
+                <div class="fluent-detail__section">
+                    <h2 class="fluent-heading fluent-heading--sm">Justification</h2>
+                    <p class="fluent-text" th:text="${request.justification}">Justification text here.</p>
+                </div>
+
+                <!-- Rejection Reason -->
+                <div class="fluent-detail__section" th:if="${request.rejectionReason != null}">
+                    <h2 class="fluent-heading fluent-heading--sm">Rejection Reason</h2>
+                    <div class="fluent-alert fluent-alert--warning">
+                        <span th:text="${request.rejectionReason}">Rejection reason.</span>
+                    </div>
+                </div>
+
+                <!-- Status Timeline -->
+                <div class="fluent-detail__section">
+                    <h2 class="fluent-heading fluent-heading--sm">Timeline</h2>
+                    <div class="fluent-timeline">
+                        <div class="fluent-timeline__item fluent-timeline__item--completed">
+                            <div class="fluent-timeline__marker"></div>
+                            <div class="fluent-timeline__content">
+                                <span class="fluent-text fluent-text--bold">Request Created</span>
+                                <span class="fluent-text fluent-text--muted"
+                                      th:text="${#temporals.format(request.createdAt, 'MMM d, yyyy h:mm a')}">Date</span>
+                                <span class="fluent-text fluent-text--muted"
+                                      th:text="'By ' + ${request.requester.displayName}">By User</span>
+                            </div>
+                        </div>
+
+                        <div class="fluent-timeline__item"
+                             th:if="${request.approvedAt != null}"
+                             th:classappend="'fluent-timeline__item--completed'">
+                            <div class="fluent-timeline__marker"></div>
+                            <div class="fluent-timeline__content">
+                                <span class="fluent-text fluent-text--bold"
+                                      th:text="${request.status.name() == 'REJECTED'} ? 'Request Rejected' : 'Request Approved'">Approved</span>
+                                <span class="fluent-text fluent-text--muted"
+                                      th:text="${#temporals.format(request.approvedAt, 'MMM d, yyyy h:mm a')}">Date</span>
+                                <span class="fluent-text fluent-text--muted"
+                                      th:if="${request.approver?.displayName != null}"
+                                      th:text="'By ' + ${request.approver?.displayName}">By Approver</span>
+                            </div>
+                        </div>
+
+                        <div class="fluent-timeline__item"
+                             th:if="${request.pickedUpAt != null}"
+                             th:classappend="'fluent-timeline__item--completed'">
+                            <div class="fluent-timeline__marker"></div>
+                            <div class="fluent-timeline__content">
+                                <span class="fluent-text fluent-text--bold">Picked Up</span>
+                                <span class="fluent-text fluent-text--muted"
+                                      th:text="${#temporals.format(request.pickedUpAt, 'MMM d, yyyy h:mm a')}">Date</span>
+                            </div>
+                        </div>
+
+                        <div class="fluent-timeline__item"
+                             th:if="${request.pickupDeadline != null and request.pickedUpAt == null}">
+                            <div class="fluent-timeline__marker"></div>
+                            <div class="fluent-timeline__content">
+                                <span class="fluent-text fluent-text--bold">Pickup Deadline</span>
+                                <span class="fluent-text fluent-text--muted"
+                                      th:text="${#temporals.format(request.pickupDeadline, 'MMM d, yyyy h:mm a')}">Date</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Requester Info -->
+                <div class="fluent-detail__section">
+                    <h2 class="fluent-heading fluent-heading--sm">Requester</h2>
+                    <div class="fluent-detail__grid">
+                        <div class="fluent-detail__field">
+                            <span class="fluent-label">Name</span>
+                            <span class="fluent-text" th:text="${request.requester.displayName}">Name</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Actions -->
+            <div class="fluent-detail__sidebar">
+                <div class="fluent-card fluent-card--action-panel">
+                    <h3 class="fluent-card__title">Actions</h3>
+
+                    <!-- Cancel (Owner, cancellable statuses) -->
+                    <form th:if="${isOwner and request.status.isCancellable()}"
+                          th:action="@{/requests/{id}/cancel(id=${request.id})}" method="post"
+                          class="fluent-form fluent-form--inline">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit"
+                                class="fluent-button fluent-button--danger fluent-button--full"
+                                onclick="return confirm('Are you sure you want to cancel this request?')">
+                            Cancel Request
+                        </button>
+                    </form>
+
+                    <!-- Approve (Teacher/Admin, pending) -->
+                    <form th:if="${(isTeacher or isAdmin) and request.status.name() == 'PENDING_APPROVAL'}"
+                          th:action="@{/requests/{id}/approve(id=${request.id})}" method="post"
+                          class="fluent-form fluent-form--inline">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit"
+                                class="fluent-button fluent-button--success fluent-button--full">
+                            Approve Request
+                        </button>
+                    </form>
+
+                    <!-- Reject (Teacher/Admin, pending) -->
+                    <form th:if="${(isTeacher or isAdmin) and request.status.name() == 'PENDING_APPROVAL'}"
+                          th:action="@{/requests/{id}/reject(id=${request.id})}" method="post"
+                          class="fluent-form fluent-form--action-form">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <div class="fluent-form__field">
+                            <label for="rejectionReason" class="fluent-label">Rejection Reason</label>
+                            <textarea id="rejectionReason" name="reason"
+                                      class="fluent-textarea"
+                                      placeholder="Provide a reason for rejection..."
+                                      rows="3"></textarea>
+                        </div>
+                        <button type="submit"
+                                class="fluent-button fluent-button--danger fluent-button--full">
+                            Reject Request
+                        </button>
+                    </form>
+
+                    <!-- No actions available message -->
+                    <p class="fluent-text fluent-text--muted"
+                       th:if="${request.status.isTerminal()}">
+                        This request is in a terminal state. No further actions are available.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</body>
+</html>

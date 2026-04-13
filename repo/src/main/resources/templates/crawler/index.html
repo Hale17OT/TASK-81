@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head><title>Crawler Dashboard</title></head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-stack" style="gap: var(--spacingVerticalXXL);">
+        <h1>Crawler Observability</h1>
+
+        <!-- Job List -->
+        <div class="fluent-card">
+            <div class="fluent-card-header d-flex justify-between items-center">
+                <h2>Crawler Jobs</h2>
+            </div>
+            <div class="fluent-card-body">
+                <table class="fluent-table fluent-table--striped">
+                    <thead><tr><th>Name</th><th>Source</th><th>Status</th><th>Success Rate</th><th>Avg Latency</th><th>Parse Hit Rate</th><th>Last Run</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        <tr th:each="job : ${jobs}">
+                            <td th:text="${job.name}">Job</td>
+                            <td><span class="fluent-badge" th:text="${job.sourceType}">FILE</span> <span th:text="${job.sourcePath}" style="font-size: var(--fontSizeBase200);">path</span></td>
+                            <td><span class="fluent-badge" th:classappend="${job.isActive} ? 'fluent-badge--success' : 'fluent-badge--danger'" th:text="${job.isActive} ? 'Active' : 'Inactive'">Active</span></td>
+                            <td><span th:classappend="${job.successRate.doubleValue() >= 95} ? 'status-success' : (${job.successRate.doubleValue() >= 80} ? 'status-warning' : 'status-danger')" th:text="${#numbers.formatDecimal(job.successRate, 1, 1) + '%'}">100%</span></td>
+                            <td th:text="${job.avgLatencyMs + 'ms'}">0ms</td>
+                            <td th:text="${#numbers.formatDecimal(job.parseHitRate, 1, 1) + '%'}">100%</td>
+                            <td th:text="${job.lastRunAt ?: 'Never'}">Never</td>
+                            <td class="d-flex" style="gap: var(--spacingHorizontalXS);">
+                                <button class="fluent-btn fluent-btn--primary fluent-btn--small" th:onclick="'runCrawler(' + ${job.id} + ')'">Run Now</button>
+                                <button class="fluent-btn fluent-btn--outline fluent-btn--small" th:onclick="'viewFailures(' + ${job.id} + ')'">Failures</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div th:if="${jobs == null or jobs.isEmpty()}" class="empty-state"><p>No crawler jobs configured.</p></div>
+            </div>
+        </div>
+
+        <!-- Create Job -->
+        <div class="fluent-card">
+            <div class="fluent-card-header"><h2>Create Crawler Job</h2></div>
+            <div class="fluent-card-body">
+                <form id="create-job-form">
+                    <div class="fluent-grid" style="gap: var(--spacingHorizontalL);">
+                        <div class="fluent-form-group fluent-col-3"><label class="fluent-label">Name</label><input type="text" id="job-name" class="fluent-input" required/></div>
+                        <div class="fluent-form-group fluent-col-2"><label class="fluent-label">Source Type</label><select id="job-type" class="fluent-select"><option value="FILE">File</option><option value="INTRANET_PAGE">Intranet Page</option></select></div>
+                        <div class="fluent-form-group fluent-col-4"><label class="fluent-label">Source Path</label><input type="text" id="job-path" class="fluent-input" required/></div>
+                        <div class="fluent-form-group fluent-col-3"><label class="fluent-label">Cron Expression</label><input type="text" id="job-cron" class="fluent-input" placeholder="0 0 * * * *"/></div>
+                    </div>
+                    <button type="button" class="fluent-btn fluent-btn--primary" onclick="createJob()">Create Job</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Failure Snapshots -->
+        <div id="failures-section" class="fluent-card" style="display: none;">
+            <div class="fluent-card-header"><h2>Failure Snapshots</h2></div>
+            <div class="fluent-card-body" id="failures-content"></div>
+        </div>
+    </div>
+</div>
+<div layout:fragment="scripts">
+<script>
+function runCrawler(jobId) {
+    setLoading(event.target, true);
+    campusApi.post('/api/admin/crawler/jobs/' + jobId + '/run').then(function(r) {
+        setLoading(event.target, false);
+        if (r.success) { showAlert('Crawler job started', 'success'); location.reload(); }
+        else showAlert(r.error.message, 'error');
+    }).catch(function() { setLoading(event.target, false); });
+}
+function createJob() {
+    campusApi.post('/api/admin/crawler/jobs', {
+        name: document.getElementById('job-name').value,
+        sourceType: document.getElementById('job-type').value,
+        sourcePath: document.getElementById('job-path').value,
+        cronExpression: document.getElementById('job-cron').value
+    }).then(function(r) { if (r.success) { showAlert('Job created', 'success'); location.reload(); } });
+}
+function viewFailures(jobId) {
+    campusApi.get('/api/admin/crawler/jobs/' + jobId + '/failures?page=0&size=10').then(function(r) {
+        if (r.success && r.data && r.data.content.length > 0) {
+            var html = '<table class="fluent-table fluent-table--striped"><thead><tr><th>Time</th><th>Error</th><th>Parser</th><th>Latency</th></tr></thead><tbody>';
+            r.data.content.forEach(function(f) { html += '<tr><td>' + f.createdAt + '</td><td>' + (f.errorMessage || '-') + '</td><td>' + (f.parserVersion || '-') + '</td><td>' + (f.latencyMs || '-') + 'ms</td></tr>'; });
+            html += '</tbody></table>';
+            document.getElementById('failures-content').innerHTML = html;
+        } else {
+            document.getElementById('failures-content').innerHTML = '<p>No failures recorded.</p>';
+        }
+        document.getElementById('failures-section').style.display = 'block';
+    });
+}
+</script>
+</div>
+</body>
+</html>

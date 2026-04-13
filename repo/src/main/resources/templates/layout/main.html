@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="_csrf" th:name="${_csrf.parameterName}" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:name="${_csrf.headerName}" th:content="${_csrf.token}"/>
+    <title layout:title-pattern="$LAYOUT_TITLE - $CONTENT_TITLE">CampusStore</title>
+    <link rel="stylesheet" th:href="@{/css/fluent-tokens.css}"/>
+    <link rel="stylesheet" th:href="@{/css/fluent-base.css}"/>
+    <link rel="stylesheet" th:href="@{/css/fluent-layout.css}"/>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="fluent-app">
+    <!-- Top Navigation -->
+    <div th:replace="~{fragments/nav :: navigation}"></div>
+
+    <!-- Main Content -->
+    <main class="fluent-main">
+        <div class="fluent-container">
+            <!-- Flash messages -->
+            <div th:if="${successMessage}" class="fluent-alert fluent-alert--success" role="alert">
+                <span th:text="${successMessage}"></span>
+            </div>
+            <div th:if="${errorMessage}" class="fluent-alert fluent-alert--error" role="alert">
+                <span th:text="${errorMessage}"></span>
+            </div>
+
+            <div layout:fragment="content"></div>
+        </div>
+    </main>
+
+    <script th:src="@{/js/app.js}"></script>
+    <div layout:fragment="scripts"></div>
+</body>
+</html>

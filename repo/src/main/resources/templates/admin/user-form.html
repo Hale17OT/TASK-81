@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head><title>User Form</title></head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-stack" style="gap: var(--spacingVerticalXXL); max-width: 600px;">
+        <h1 th:text="${editMode != null and editMode} ? 'Edit User' : 'Create New User'">User Form</h1>
+        <div class="fluent-card">
+            <div class="fluent-card-body">
+                <form th:action="${editMode != null and editMode} ? @{/admin/users/{id}(id=${user.id})} : @{/admin/users}" method="post" data-prevent-double-submit>
+                    <!-- Username: required for create, readonly for edit -->
+                    <div class="fluent-form-group" th:unless="${editMode != null and editMode}">
+                        <label class="fluent-label">Username *</label>
+                        <input type="text" name="username" class="fluent-input" required minlength="3" maxlength="50"/>
+                    </div>
+                    <div class="fluent-form-group" th:if="${editMode != null and editMode}">
+                        <label class="fluent-label">Username</label>
+                        <input type="text" class="fluent-input" th:value="${user.username}" disabled/>
+                    </div>
+
+                    <!-- Password: required for create, optional for edit -->
+                    <div class="fluent-form-group" th:unless="${editMode != null and editMode}">
+                        <label class="fluent-label">Password *</label>
+                        <input type="password" name="password" class="fluent-input" required minlength="8"/>
+                    </div>
+
+                    <div class="fluent-form-group">
+                        <label class="fluent-label">Display Name *</label>
+                        <input type="text" name="displayName" class="fluent-input" required maxlength="100"
+                               th:value="${editMode != null and editMode} ? ${user.displayName} : ''"/>
+                    </div>
+                    <div class="fluent-form-group">
+                        <label class="fluent-label">Email</label>
+                        <input type="email" name="email" class="fluent-input"/>
+                    </div>
+                    <div class="fluent-form-group">
+                        <label class="fluent-label">Phone</label>
+                        <input type="tel" name="phone" class="fluent-input"/>
+                    </div>
+                    <div class="fluent-form-group">
+                        <label class="fluent-label">Department</label>
+                        <select name="departmentId" class="fluent-select">
+                            <option value="">None</option>
+                            <option th:each="dept : ${departments}" th:value="${dept.id}" th:text="${dept.name}"
+                                    th:selected="${editMode != null and editMode and user.departmentId != null and user.departmentId == dept.id}">Dept</option>
+                        </select>
+                    </div>
+
+                    <!-- Roles: multi-checkbox for create only (edit uses separate role management) -->
+                    <div class="fluent-form-group" th:unless="${editMode != null and editMode}">
+                        <label class="fluent-label">Roles *</label>
+                        <div class="d-flex" style="gap: var(--spacingHorizontalL);">
+                            <label><input type="checkbox" name="roles" value="STUDENT"/> Student</label>
+                            <label><input type="checkbox" name="roles" value="TEACHER"/> Teacher</label>
+                            <label><input type="checkbox" name="roles" value="ADMIN"/> Admin</label>
+                        </div>
+                    </div>
+                    <div class="fluent-form-group" th:if="${editMode != null and editMode}">
+                        <label class="fluent-label">Current Roles</label>
+                        <div class="d-flex" style="gap: var(--spacingHorizontalS);">
+                            <span th:each="role : ${user.roles}" class="fluent-badge fluent-badge--info" th:text="${role.role}">ROLE</span>
+                        </div>
+                        <small class="fluent-text fluent-text--muted">Role changes are managed via the API.</small>
+                    </div>
+
+                    <div class="d-flex" style="gap: var(--spacingHorizontalS); margin-top: var(--spacingVerticalL);">
+                        <button type="submit" class="fluent-btn fluent-btn--primary"
+                                th:text="${editMode != null and editMode} ? 'Save Changes' : 'Create User'">Submit</button>
+                        <a th:href="@{/admin/users}" class="fluent-btn fluent-btn--outline">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

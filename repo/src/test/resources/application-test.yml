@@ -1,0 +1,35 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:campusstore_test;DB_CLOSE_DELAY=-1;MODE=MYSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: false
+
+server:
+  port: 8443
+  ssl:
+    enabled: false
+
+campusstore:
+  master-key-passphrase: test-master-key-2026
+  encryption:
+    salt: test-salt
+    iterations: 1000
+  rate-limit:
+    anonymous-requests-per-minute: 10000
+    authenticated-requests-per-minute: 10000
+    lockout-threshold: 100000
+    lockout-duration-minutes: 0
+
+logging:
+  level:
+    root: WARN
+    com.campusstore: DEBUG

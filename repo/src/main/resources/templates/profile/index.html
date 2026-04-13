@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>My Profile</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-page fluent-page--profile">
+
+        <h1 class="fluent-heading fluent-heading--lg">My Profile</h1>
+
+        <div class="fluent-detail">
+            <div class="fluent-detail__main">
+
+                <!-- Profile Info Card -->
+                <div class="fluent-card">
+                    <div class="fluent-card__body">
+                        <div class="fluent-detail__grid">
+                            <div class="fluent-detail__field">
+                                <span class="fluent-label">Username</span>
+                                <span class="fluent-text" th:text="${profile.username}">username</span>
+                            </div>
+                            <div class="fluent-detail__field">
+                                <span class="fluent-label">Display Name</span>
+                                <span class="fluent-text" th:text="${profile.displayName}">Display Name</span>
+                            </div>
+                            <div class="fluent-detail__field">
+                                <span class="fluent-label">Phone (last 4)</span>
+                                <span class="fluent-text" th:text="${profile.phoneLast4 != null ? '***-***-' + profile.phoneLast4 : 'Not set'}">***-***-1234</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Profile Form -->
+                <div class="fluent-card">
+                    <div class="fluent-card__header">
+                        <h2 class="fluent-heading fluent-heading--md">Edit Profile</h2>
+                    </div>
+                    <div class="fluent-card__body">
+                        <form th:action="@{/profile/update}" method="post" class="fluent-form">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                            <div class="fluent-form__field">
+                                <label for="displayName" class="fluent-label">Display Name</label>
+                                <input type="text" id="displayName" name="displayName"
+                                       class="fluent-input"
+                                       th:value="${profile.displayName}"
+                                       required/>
+                            </div>
+
+                            <div class="fluent-form__field">
+                                <label for="email" class="fluent-label">Email</label>
+                                <input type="email" id="email" name="email"
+                                       class="fluent-input"
+                                       placeholder="Enter new email"/>
+                            </div>
+
+                            <div class="fluent-form__field">
+                                <label for="phone" class="fluent-label">Phone</label>
+                                <input type="tel" id="phone" name="phone"
+                                       class="fluent-input"
+                                       placeholder="555-123-4567"/>
+                            </div>
+
+                            <div class="fluent-form__actions">
+                                <button type="submit" class="fluent-button fluent-button--primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar navigation -->
+            <div class="fluent-detail__sidebar">
+                <div class="fluent-card fluent-card--nav">
+                    <h3 class="fluent-card__title">Profile Settings</h3>
+                    <ul class="fluent-nav-list">
+                        <li class="fluent-nav-list__item">
+                            <a th:href="@{/profile/addresses}" class="fluent-link">Manage Addresses</a>
+                        </li>
+                        <li class="fluent-nav-list__item">
+                            <a th:href="@{/profile/contacts}" class="fluent-link">Manage Contacts</a>
+                        </li>
+                        <li class="fluent-nav-list__item">
+                            <a th:href="@{/profile/tags}" class="fluent-link">Manage Tags</a>
+                        </li>
+                        <li class="fluent-nav-list__item">
+                            <a th:href="@{/profile/notifications}" class="fluent-link">Notification Preferences</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="fluent-card fluent-card--nav">
+                    <h3 class="fluent-card__title">Activity</h3>
+                    <ul class="fluent-nav-list">
+                        <li class="fluent-nav-list__item">
+                            <a th:href="@{/requests/mine}" class="fluent-link">My Requests &amp; Fulfillment History</a>
+                        </li>
+                        <li class="fluent-nav-list__item">
+                            <a th:href="@{/account/change-password}" class="fluent-link">Change Password</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</body>
+</html>

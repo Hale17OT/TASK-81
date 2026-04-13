@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/main}">
+<head>
+    <title th:text="${item.name}">Item Detail</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-page fluent-page--detail">
+
+        <!-- Back link -->
+        <div class="fluent-breadcrumb">
+            <a th:href="@{/search}" class="fluent-link fluent-link--back">Back to Search</a>
+        </div>
+
+        <div class="fluent-detail">
+            <div class="fluent-detail__main">
+                <!-- Item Header -->
+                <div class="fluent-detail__header">
+                    <h1 class="fluent-heading fluent-heading--lg" th:text="${item.name}">Item Name</h1>
+                    <div class="fluent-detail__badges">
+                        <span class="fluent-badge fluent-badge--condition"
+                              th:text="${item.itemCondition}"
+                              th:classappend="'fluent-badge--' + ${item.itemCondition.name().toLowerCase()}">NEW</span>
+                        <span class="fluent-badge fluent-badge--abc"
+                              th:if="${item.abcClassification != null}"
+                              th:text="'Class ' + ${item.abcClassification}"
+                              th:classappend="'fluent-badge--abc-' + ${item.abcClassification.name().toLowerCase()}">Class A</span>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="fluent-detail__section">
+                    <h2 class="fluent-heading fluent-heading--sm">Description</h2>
+                    <p class="fluent-text" th:text="${item.description}">Item description goes here.</p>
+                </div>
+
+                <!-- Price -->
+                <div class="fluent-detail__section">
+                    <h2 class="fluent-heading fluent-heading--sm">Price</h2>
+                    <span class="fluent-text fluent-text--price fluent-text--lg"
+                          th:text="'$' + ${item.priceUsd}">$0.00</span>
+                </div>
+
+                <!-- Availability -->
+                <div class="fluent-detail__section">
+                    <h2 class="fluent-heading fluent-heading--sm">Availability</h2>
+                    <div class="fluent-detail__availability">
+                        <span class="fluent-text"
+                              th:text="${item.quantityAvailable} + ' of ' + ${item.quantityTotal} + ' available'">
+                            0 of 0 available
+                        </span>
+                        <div class="fluent-progress">
+                            <div class="fluent-progress__bar"
+                                 th:style="'width: ' + ${item.quantityTotal > 0 ? (item.quantityAvailable * 100 / item.quantityTotal) : 0} + '%'"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Details Grid -->
+                <div class="fluent-detail__section">
+                    <h2 class="fluent-heading fluent-heading--sm">Details</h2>
+                    <div class="fluent-detail__grid">
+                        <div class="fluent-detail__field">
+                            <span class="fluent-label">SKU</span>
+                            <span class="fluent-text" th:text="${item.sku}">SKU-001</span>
+                        </div>
+                        <div class="fluent-detail__field" th:if="${item.categoryId != null}">
+                            <span class="fluent-label">Category</span>
+                            <span class="fluent-text" th:text="${item.categoryId}">Category</span>
+                        </div>
+                        <div class="fluent-detail__field" th:if="${item.departmentId != null}">
+                            <span class="fluent-label">Department</span>
+                            <span class="fluent-text" th:text="${item.departmentId}">Department</span>
+                        </div>
+                        <div class="fluent-detail__field" th:if="${item.locationId != null}">
+                            <span class="fluent-label">Location / Zone</span>
+                            <span class="fluent-text" th:text="${item.locationId}">Location</span>
+                        </div>
+                        <div class="fluent-detail__field" th:if="${item.expirationDate != null}">
+                            <span class="fluent-label">Expiration Date</span>
+                            <span class="fluent-text" th:text="${item.expirationDate}">2025-12-31</span>
+                        </div>
+                        <div class="fluent-detail__field">
+                            <span class="fluent-label">Requires Approval</span>
+                            <span class="fluent-text" th:text="${item.requiresApproval} ? 'Yes' : 'No'">No</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Actions -->
+            <div class="fluent-detail__sidebar">
+                <!-- Request This Item -->
+                <div class="fluent-card fluent-card--action-panel" sec:authorize="hasAnyRole('STUDENT','TEACHER')">
+                    <h3 class="fluent-card__title">Request This Item</h3>
+                    <p class="fluent-text fluent-text--muted"
+                       th:if="${item.quantityAvailable > 0}">
+                        This item is available for request.
+                    </p>
+                    <p class="fluent-text fluent-text--muted"
+                       th:if="${item.quantityAvailable <= 0}">
+                        This item is currently out of stock.
+                    </p>
+                    <a th:href="@{/requests/new/{id}(id=${item.id})}"
+                       class="fluent-button fluent-button--primary fluent-button--full"
+                       th:classappend="${item.quantityAvailable <= 0} ? 'fluent-button--disabled'"
+                       th:if="${item.quantityAvailable > 0}">
+                        Request This Item
+                    </a>
+                    <button class="fluent-button fluent-button--primary fluent-button--full fluent-button--disabled"
+                            disabled
+                            th:if="${item.quantityAvailable <= 0}">
+                        Out of Stock
+                    </button>
+                </div>
+
+                <!-- Favorite Toggle -->
+                <div class="fluent-card fluent-card--action-panel" sec:authorize="isAuthenticated()">
+                    <form th:action="@{/inventory/{id}/favorite(id=${item.id})}" method="post">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit" th:class="${isFavorite} ? 'fluent-btn fluent-btn--primary' : 'fluent-btn fluent-btn--outline'" style="width:100%;">
+                            <span th:text="${isFavorite} ? 'Remove from Favorites' : 'Add to Favorites'">Toggle Favorite</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</body>
+</html>

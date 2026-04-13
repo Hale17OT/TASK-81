@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<div th:fragment="searchBar" class="fluent-search">
+    <form th:action="@{/search}" method="get" class="fluent-search__form">
+        <!-- Search input -->
+        <div class="fluent-search__input-group">
+            <input type="text" name="keyword"
+                   th:value="${keyword}"
+                   placeholder="Search items..."
+                   class="fluent-input fluent-search__input"
+                   autocomplete="off"/>
+            <button type="submit" class="fluent-button fluent-button--primary fluent-search__submit">
+                Search
+            </button>
+        </div>
+
+        <!-- Filter row -->
+        <div class="fluent-search__filters">
+            <!-- Category -->
+            <div class="fluent-search__filter">
+                <label for="categoryFilter" class="fluent-label">Category</label>
+                <select id="categoryFilter" name="category" class="fluent-select">
+                    <option value="">All Categories</option>
+                    <option th:each="cat : ${categories}"
+                            th:value="${cat}"
+                            th:text="${cat}"
+                            th:selected="${cat == selectedCategory}">Category</option>
+                </select>
+            </div>
+
+            <!-- Price Range -->
+            <div class="fluent-search__filter">
+                <label for="priceRangeFilter" class="fluent-label">Price Range</label>
+                <select id="priceRangeFilter" name="priceRange" class="fluent-select">
+                    <option value="">Any Price</option>
+                    <option value="0-25" th:selected="${selectedPriceRange == '0-25'}">$0 - $25</option>
+                    <option value="25-50" th:selected="${selectedPriceRange == '25-50'}">$25 - $50</option>
+                    <option value="50-100" th:selected="${selectedPriceRange == '50-100'}">$50 - $100</option>
+                    <option value="100-250" th:selected="${selectedPriceRange == '100-250'}">$100 - $250</option>
+                    <option value="250+" th:selected="${selectedPriceRange == '250+'}">$250+</option>
+                </select>
+            </div>
+
+            <!-- Condition -->
+            <div class="fluent-search__filter">
+                <label for="conditionFilter" class="fluent-label">Condition</label>
+                <select id="conditionFilter" name="condition" class="fluent-select">
+                    <option value="">Any Condition</option>
+                    <option th:each="cond : ${conditions}"
+                            th:value="${cond}"
+                            th:text="${cond}"
+                            th:selected="${cond == selectedCondition}">Condition</option>
+                </select>
+            </div>
+
+            <!-- Campus Area (Zone) -->
+            <div class="fluent-search__filter">
+                <label for="zoneFilter" class="fluent-label">Campus Area</label>
+                <select id="zoneFilter" name="zone" class="fluent-select">
+                    <option value="">All Areas</option>
+                    <option th:each="zone : ${zones}"
+                            th:value="${zone}"
+                            th:text="${zone}"
+                            th:selected="${zone == selectedZone}">Zone</option>
+                </select>
+            </div>
+
+            <!-- Sort -->
+            <div class="fluent-search__filter">
+                <label for="sortFilter" class="fluent-label">Sort By</label>
+                <select id="sortFilter" name="sort" class="fluent-select">
+                    <option value="newest" th:selected="${selectedSort == 'newest'}">Newest</option>
+                    <option value="price-asc" th:selected="${selectedSort == 'price-asc'}">Price Low-High</option>
+                    <option value="price-desc" th:selected="${selectedSort == 'price-desc'}">Price High-Low</option>
+                    <option value="popularity" th:selected="${selectedSort == 'popularity'}">Popularity</option>
+                    <option value="distance" th:selected="${selectedSort == 'distance'}">Distance</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Personalization toggle (visible when authenticated) -->
+        <div class="fluent-search__personalization" sec:authorize="isAuthenticated()">
+            <label class="fluent-switch">
+                <input type="checkbox" name="personalized"
+                       th:checked="${personalized}"
+                       class="fluent-switch__input"/>
+                <span class="fluent-switch__slider"></span>
+                <span class="fluent-switch__label">Personalized Results</span>
+            </label>
+        </div>
+    </form>
+
+    <!-- Trending terms -->
+    <div class="fluent-search__trending" th:if="${not #lists.isEmpty(trendingTerms)}">
+        <span class="fluent-search__trending-label">Trending:</span>
+        <div class="fluent-search__trending-list">
+            <a th:each="term : ${trendingTerms}"
+               th:href="@{/search(keyword=${term})}"
+               th:text="${term}"
+               class="fluent-chip fluent-chip--outline">term</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

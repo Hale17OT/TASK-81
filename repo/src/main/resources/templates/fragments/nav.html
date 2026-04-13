@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<nav th:fragment="navigation" class="fluent-nav">
+    <div class="fluent-nav__container">
+        <!-- Brand -->
+        <a th:href="@{/}" class="fluent-nav__brand">CampusStore</a>
+
+        <!-- Mobile hamburger toggle -->
+        <button class="fluent-nav__toggle" id="navToggle"
+                aria-label="Toggle navigation" aria-expanded="false">
+            <span class="fluent-nav__toggle-icon"></span>
+            <span class="fluent-nav__toggle-icon"></span>
+            <span class="fluent-nav__toggle-icon"></span>
+        </button>
+
+        <!-- Nav items -->
+        <div class="fluent-nav__menu" id="navMenu">
+            <ul class="fluent-nav__list">
+                <!-- Common: all authenticated users -->
+                <li class="fluent-nav__item" sec:authorize="isAuthenticated()">
+                    <a th:href="@{/}"
+                       th:classappend="${#strings.equals(currentPage, 'home')} ? 'fluent-nav__link--active'"
+                       class="fluent-nav__link">Home</a>
+                </li>
+                <li class="fluent-nav__item" sec:authorize="isAuthenticated()">
+                    <a th:href="@{/search}"
+                       th:classappend="${#strings.equals(currentPage, 'search')} ? 'fluent-nav__link--active'"
+                       class="fluent-nav__link">Search</a>
+                </li>
+
+                <!-- Student and Teacher: My Requests -->
+                <li class="fluent-nav__item" sec:authorize="hasAnyRole('STUDENT','TEACHER')">
+                    <a th:href="@{/requests/mine}"
+                       th:classappend="${#strings.equals(currentPage, 'requests')} ? 'fluent-nav__link--active'"
+                       class="fluent-nav__link">My Requests</a>
+                </li>
+
+                <!-- Teacher only: Pending Approvals -->
+                <li class="fluent-nav__item" sec:authorize="hasRole('TEACHER')">
+                    <a th:href="@{/requests/pending}"
+                       th:classappend="${#strings.equals(currentPage, 'approvals')} ? 'fluent-nav__link--active'"
+                       class="fluent-nav__link">Pending Approvals</a>
+                </li>
+
+                <!-- Admin items -->
+                <li class="fluent-nav__item" sec:authorize="hasRole('ADMIN')">
+                    <a th:href="@{/admin/inventory}"
+                       th:classappend="${#strings.equals(currentPage, 'inventory')} ? 'fluent-nav__link--active'"
+                       class="fluent-nav__link">Manage Inventory</a>
+                </li>
+                <li class="fluent-nav__item" sec:authorize="hasRole('ADMIN')">
+                    <a th:href="@{/admin/users}"
+                       th:classappend="${#strings.equals(currentPage, 'users')} ? 'fluent-nav__link--active'"
+                       class="fluent-nav__link">Manage Users</a>
+                </li>
+                <li class="fluent-nav__item" sec:authorize="hasRole('ADMIN')">
+                    <a th:href="@{/admin/warehouse}"
+                       th:classappend="${#strings.equals(currentPage, 'warehouse')} ? 'fluent-nav__link--active'"
+                       class="fluent-nav__link">Warehouse</a>
+                </li>
+                <li class="fluent-nav__item" sec:authorize="hasRole('ADMIN')">
+                    <a th:href="@{/admin/crawler}"
+                       th:classappend="${#strings.equals(currentPage, 'crawler')} ? 'fluent-nav__link--active'"
+                       class="fluent-nav__link">Crawler</a>
+                </li>
+                <li class="fluent-nav__item" sec:authorize="hasRole('ADMIN')">
+                    <a th:href="@{/admin/audit}"
+                       th:classappend="${#strings.equals(currentPage, 'audit')} ? 'fluent-nav__link--active'"
+                       class="fluent-nav__link">Audit Log</a>
+                </li>
+                <li class="fluent-nav__item" sec:authorize="hasRole('ADMIN')">
+                    <a th:href="@{/admin/policies}"
+                       th:classappend="${#strings.equals(currentPage, 'policies')} ? 'fluent-nav__link--active'"
+                       class="fluent-nav__link">Policies</a>
+                </li>
+                <li class="fluent-nav__item" sec:authorize="hasRole('ADMIN')">
+                    <a th:href="@{/admin/email-outbox}"
+                       th:classappend="${#strings.equals(currentPage, 'email-outbox')} ? 'fluent-nav__link--active'"
+                       class="fluent-nav__link">Email Outbox</a>
+                </li>
+            </ul>
+
+            <!-- Right side -->
+            <ul class="fluent-nav__list fluent-nav__list--right" sec:authorize="isAuthenticated()">
+                <!-- Notification badge -->
+                <li class="fluent-nav__item">
+                    <div th:replace="~{fragments/notifications :: notificationBell}"></div>
+                </li>
+
+                <!-- Profile link -->
+                <li class="fluent-nav__item">
+                    <a th:href="@{/profile}"
+                       th:classappend="${#strings.equals(currentPage, 'profile')} ? 'fluent-nav__link--active'"
+                       class="fluent-nav__link">
+                        <span class="fluent-nav__icon fluent-nav__icon--profile"></span>
+                        <span sec:authentication="name">Profile</span>
+                    </a>
+                </li>
+
+                <!-- Logout -->
+                <li class="fluent-nav__item">
+                    <form th:action="@{/logout}" method="post" class="fluent-nav__logout-form">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit" class="fluent-nav__link fluent-nav__link--logout">Logout</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+</body>
+</html>

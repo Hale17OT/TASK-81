@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Search</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-page fluent-page--search">
+
+        <h1 class="fluent-heading fluent-heading--lg">Search Items</h1>
+
+        <!-- Search Bar with Filters -->
+        <div class="fluent-search">
+            <form id="search-form" th:action="@{/search}" method="get" class="fluent-search__form">
+
+                <!-- Search input -->
+                <div class="fluent-search__input-group">
+                    <input id="search-input" type="text" name="keyword"
+                           th:value="${keyword}"
+                           placeholder="Search items..."
+                           class="fluent-input fluent-search__input"
+                           autocomplete="off"/>
+                    <button type="submit" class="fluent-button fluent-button--primary fluent-search__submit">
+                        Search
+                    </button>
+                </div>
+
+                <!-- On-device search history (localStorage) -->
+                <div id="local-search-history" class="fluent-search__history" style="display:none; gap: var(--spacingHorizontalXS); flex-wrap: wrap; align-items: center; margin-top: var(--spacingVerticalXS);"></div>
+
+                <!-- Filter sidebar / row -->
+                <div class="fluent-search__filters">
+                    <!-- Category -->
+                    <div class="fluent-search__filter">
+                        <label for="categoryFilter" class="fluent-label">Category</label>
+                        <select id="categoryFilter" name="category" class="fluent-select">
+                            <option value="">All Categories</option>
+                            <option th:each="cat : ${categories}"
+                                    th:value="${cat.id}"
+                                    th:text="${cat.name}"
+                                    th:selected="${cat.id == selectedCategory}">Category</option>
+                        </select>
+                    </div>
+
+                    <!-- Price Range -->
+                    <div class="fluent-search__filter">
+                        <label class="fluent-label">Price Min ($)</label>
+                        <input type="number" name="priceMin" class="fluent-input" step="0.01" min="0"
+                               th:value="${selectedPriceMin}" placeholder="Min"/>
+                    </div>
+                    <div class="fluent-search__filter">
+                        <label class="fluent-label">Price Max ($)</label>
+                        <input type="number" name="priceMax" class="fluent-input" step="0.01" min="0"
+                               th:value="${selectedPriceMax}" placeholder="Max"/>
+                    </div>
+
+                    <!-- Condition -->
+                    <div class="fluent-search__filter">
+                        <label for="conditionFilter" class="fluent-label">Condition</label>
+                        <select id="conditionFilter" name="condition" class="fluent-select">
+                            <option value="">Any Condition</option>
+                            <option th:each="cond : ${conditions}"
+                                    th:value="${cond}"
+                                    th:text="${cond}"
+                                    th:selected="${#strings.toString(cond) == selectedCondition}">Condition</option>
+                        </select>
+                    </div>
+
+                    <!-- Campus Area (Zone) -->
+                    <div class="fluent-search__filter">
+                        <label for="zoneFilter" class="fluent-label">Campus Area</label>
+                        <select id="zoneFilter" name="zone" class="fluent-select">
+                            <option value="">All Areas</option>
+                            <option th:each="z : ${zones}"
+                                    th:value="${z.id}"
+                                    th:text="${z.name}"
+                                    th:selected="${z.id == selectedZone}">Zone</option>
+                        </select>
+                    </div>
+
+                    <!-- Sort -->
+                    <div class="fluent-search__filter">
+                        <label for="sortFilter" class="fluent-label">Sort By</label>
+                        <select id="sortFilter" name="sort" class="fluent-select">
+                            <option value="newest" th:selected="${selectedSort == 'newest'}">Newest</option>
+                            <option value="price-asc" th:selected="${selectedSort == 'price-asc'}">Price Low-High</option>
+                            <option value="price-desc" th:selected="${selectedSort == 'price-desc'}">Price High-Low</option>
+                            <option value="popularity" th:selected="${selectedSort == 'popularity'}">Popularity</option>
+                            <option value="distance" th:selected="${selectedSort == 'distance'}">Distance</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Personalization toggle -->
+                <div class="fluent-search__personalization" sec:authorize="isAuthenticated()">
+                    <label class="fluent-switch">
+                        <input type="checkbox" name="personalized"
+                               th:checked="${personalized}"
+                               class="fluent-switch__input"/>
+                        <span class="fluent-switch__slider"></span>
+                        <span class="fluent-switch__label">Personalized Results</span>
+                    </label>
+                </div>
+            </form>
+
+            <!-- Trending terms -->
+            <div class="fluent-search__trending" th:if="${not #lists.isEmpty(trendingTerms)}">
+                <span class="fluent-search__trending-label">Trending:</span>
+                <div class="fluent-search__trending-list">
+                    <a th:each="t : ${trendingTerms}"
+                       th:href="@{/search(keyword=${t['term']})}"
+                       class="fluent-chip fluent-chip--outline">
+                        <span th:text="${t['term']}">term</span>
+                        <span class="fluent-chip__count" th:text="'(' + ${t['count']} + ')'"></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Shimmer -->
+        <div class="fluent-grid fluent-grid--cards fluent-shimmer-container" id="searchShimmer" style="display:none;">
+            <div th:each="i : ${#numbers.sequence(1, 6)}" class="fluent-card fluent-card--shimmer">
+                <div class="fluent-shimmer fluent-shimmer--image"></div>
+                <div class="fluent-shimmer fluent-shimmer--title"></div>
+                <div class="fluent-shimmer fluent-shimmer--text"></div>
+                <div class="fluent-shimmer fluent-shimmer--text fluent-shimmer--short"></div>
+            </div>
+        </div>
+
+        <!-- Results Grid -->
+        <div th:if="${results != null and results.hasContent()}" class="fluent-section fluent-section--results">
+            <div class="fluent-section__header">
+                <span class="fluent-text fluent-text--muted"
+                      th:text="${results.totalElements} + ' result(s) found'">0 results found</span>
+            </div>
+
+            <div class="fluent-grid fluent-grid--cards">
+                <div th:each="result : ${results.content}" class="fluent-card fluent-card--item">
+                    <div class="fluent-card__body">
+                        <h3 class="fluent-card__title">
+                            <a th:href="@{/inventory/{id}(id=${result.id})}"
+                               th:text="${result.name}"
+                               class="fluent-link">Item Name</a>
+                        </h3>
+                        <p class="fluent-card__description" th:text="${result.description}">Description</p>
+                        <div class="fluent-card__meta">
+                            <span class="fluent-badge fluent-badge--condition"
+                                  th:text="${result.itemCondition}"
+                                  th:classappend="'fluent-badge--' + ${result.itemCondition.name().toLowerCase()}">NEW</span>
+                            <span class="fluent-text fluent-text--price" th:text="'$' + ${result.priceUsd}">$0.00</span>
+                        </div>
+                        <div class="fluent-card__footer">
+                            <span class="fluent-text fluent-text--muted"
+                                  th:text="${result.quantityAvailable} + ' available'">0 available</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div th:replace="~{fragments/pagination :: pagination(${results}, '/search')}"></div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="fluent-empty-state" th:if="${results != null and !results.hasContent()}">
+            <div class="fluent-empty-state__icon fluent-empty-state__icon--search"></div>
+            <h3 class="fluent-empty-state__title">No results found</h3>
+            <p class="fluent-empty-state__description">
+                Try adjusting your search terms or filters to find what you are looking for.
+            </p>
+            <div class="fluent-empty-state__actions">
+                <a th:href="@{/search}" class="fluent-button fluent-button--outline">Clear Filters</a>
+            </div>
+        </div>
+
+    </div>
+</div>
+<div layout:fragment="scripts">
+    <script th:src="@{/js/search.js}"></script>
+</div>
+</body>
+</html>

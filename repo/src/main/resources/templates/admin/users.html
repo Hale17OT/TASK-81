@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head><title>Manage Users</title></head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-stack" style="gap: var(--spacingVerticalXXL);">
+        <div class="d-flex justify-between items-center">
+            <h1>User Management</h1>
+            <a th:href="@{/admin/users/new}" class="fluent-btn fluent-btn--primary">Create User</a>
+        </div>
+        <div class="fluent-card">
+            <div class="fluent-card-body">
+                <table class="fluent-table fluent-table--striped fluent-table--hover">
+                    <thead><tr><th>Username</th><th>Display Name</th><th>Roles</th><th>Department</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        <tr th:each="user : ${users.content}">
+                            <td th:text="${user.username}">user</td>
+                            <td th:text="${user.displayName}">Name</td>
+                            <td><span th:each="role : ${user.roles}" class="fluent-badge fluent-badge--info" th:text="${role.role}" style="margin-right:4px;">ROLE</span></td>
+                            <td th:text="${user.department?.name ?: '-'}">Dept</td>
+                            <td><span class="fluent-badge" th:classappend="${user.accountStatus.name() == 'ACTIVE'} ? 'fluent-badge--success' : 'fluent-badge--danger'" th:text="${user.accountStatus}">ACTIVE</span></td>
+                            <td><a th:href="@{/admin/users/{id}(id=${user.id})}" class="fluent-btn fluent-btn--outline fluent-btn--small">Edit</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div th:if="${users.content.isEmpty()}" class="empty-state"><p>No users found.</p></div>
+            </div>
+        </div>
+        <div th:if="${users.totalPages > 1}" th:replace="~{fragments/pagination :: pagination(${users}, '/admin/users')}"></div>
+    </div>
+</div>
+</body>
+</html>

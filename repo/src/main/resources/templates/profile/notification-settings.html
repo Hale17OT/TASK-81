@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head><title>Notification Settings</title></head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-stack" style="gap: var(--spacingVerticalXXL);">
+        <div class="d-flex justify-between items-center">
+            <h1>Notification Settings</h1>
+            <a th:href="@{/profile}" class="fluent-btn fluent-btn--outline">Back to Profile</a>
+        </div>
+        <div class="fluent-card">
+            <div class="fluent-card-header"><h2>Do Not Disturb</h2></div>
+            <div class="fluent-card-body">
+                <p>Non-critical notifications will be suppressed during this window. Critical admin notices are always delivered.</p>
+                <form id="dnd-form" class="d-flex items-center" style="gap: var(--spacingHorizontalL);">
+                    <div class="fluent-form-group">
+                        <label class="fluent-label">Start Time</label>
+                        <input type="time" id="dnd-start" class="fluent-input" th:value="${preferences?.dndStartTime}"/>
+                    </div>
+                    <div class="fluent-form-group">
+                        <label class="fluent-label">End Time</label>
+                        <input type="time" id="dnd-end" class="fluent-input" th:value="${preferences?.dndEndTime}"/>
+                    </div>
+                    <button type="button" class="fluent-btn fluent-btn--primary" onclick="saveDnd()">Save DND</button>
+                    <button type="button" class="fluent-btn fluent-btn--outline" onclick="clearDnd()">Clear DND</button>
+                </form>
+            </div>
+        </div>
+        <div class="fluent-card">
+            <div class="fluent-card-header"><h2>Notification Preferences</h2></div>
+            <div class="fluent-card-body">
+                <table class="fluent-table fluent-table--striped">
+                    <thead>
+                        <tr><th>Type</th><th>In-App</th><th>Email</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="pref : ${notificationPrefs}">
+                            <td th:text="${pref.notificationType}">Type</td>
+                            <td><label class="fluent-switch"><input type="checkbox" th:checked="${pref.enabled}" th:data-type="${pref.notificationType}" class="pref-toggle" data-field="enabled"/><span class="fluent-switch-slider"></span></label></td>
+                            <td><label class="fluent-switch"><input type="checkbox" th:checked="${pref.emailEnabled}" th:data-type="${pref.notificationType}" class="pref-toggle" data-field="emailEnabled"/><span class="fluent-switch-slider"></span></label></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button type="button" class="fluent-btn fluent-btn--primary" style="margin-top: var(--spacingVerticalL);" onclick="savePrefs()">Save Preferences</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div layout:fragment="scripts">
+<script>
+// Normalize empty <input type="time"> values to null so the server can distinguish
+// "clear DND" (both null) from "set window" (both non-null). Submitting "" instead of
+// null would fail DndRequest's @AssertTrue pairing validation when the user typed
+// nothing into either field but expected the form to clear.
+function _toTimeOrNull(v) {
+    return (v != null && v.length > 0) ? v : null;
+}
+function saveDnd() {
+    var start = _toTimeOrNull(document.getElementById('dnd-start').value);
+    var end   = _toTimeOrNull(document.getElementById('dnd-end').value);
+    if ((start == null) !== (end == null)) {
+        showAlert('Set both start and end (or clear both to disable DND)', 'warning');
+        return;
+    }
+    campusApi.put('/api/user/preferences/dnd', { startTime: start, endTime: end })
+        .then(function(r) { if(r.success) showAlert('DND settings saved','success'); });
+}
+function clearDnd() {
+    campusApi.put('/api/user/preferences/dnd', { startTime: null, endTime: null })
+        .then(function(r) {
+            if(r.success) {
+                document.getElementById('dnd-start').value = '';
+                document.getElementById('dnd-end').value = '';
+                showAlert('DND cleared','success');
+            }
+        });
+}
+function savePrefs() {
+    var prefs = [];
+    document.querySelectorAll('.pref-toggle[data-field="enabled"]').forEach(function(el) {
+        var type = el.getAttribute('data-type');
+        var emailEl = document.querySelector('.pref-toggle[data-field="emailEnabled"][data-type="'+type+'"]');
+        prefs.push({type: type, enabled: el.checked, emailEnabled: emailEl ? emailEl.checked : false});
+    });
+    campusApi.put('/api/notification-preferences', {preferences: prefs}).then(function(r) {
+        if(r.success) showAlert('Preferences saved','success');
+    });
+}
+</script>
+</div>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head><title>Item Form</title></head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-stack" style="gap: var(--spacingVerticalXXL); max-width: 800px;">
+        <h1 th:text="${item != null and item.id != null} ? 'Edit Item' : 'Create New Item'">Item Form</h1>
+        <div class="fluent-card">
+            <div class="fluent-card-body">
+                <form th:action="${item != null and item.id != null} ? @{/admin/inventory/{id}(id=${item.id})} : @{/admin/inventory}" method="post" data-prevent-double-submit>
+                    <div class="fluent-form-group"><label class="fluent-label">Name *</label><input type="text" name="name" class="fluent-input" th:value="${item?.name}" required maxlength="200"/></div>
+                    <div class="fluent-form-group"><label class="fluent-label">Description</label><textarea name="description" class="fluent-textarea" rows="3" th:text="${item?.description}"></textarea></div>
+                    <div class="fluent-form-group"><label class="fluent-label">SKU</label><input type="text" name="sku" class="fluent-input" th:value="${item?.sku}" maxlength="50"/></div>
+                    <div class="fluent-grid" style="gap: var(--spacingHorizontalL);">
+                        <div class="fluent-form-group fluent-col-6"><label class="fluent-label">Category *</label>
+                            <select name="categoryId" class="fluent-select" required><option value="">Select</option><option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}" th:selected="${item?.categoryId == cat.id}">Cat</option></select></div>
+                        <div class="fluent-form-group fluent-col-6"><label class="fluent-label">Department *</label>
+                            <select name="departmentId" class="fluent-select" required><option value="">Select</option><option th:each="dept : ${departments}" th:value="${dept.id}" th:text="${dept.name}" th:selected="${item?.departmentId == dept.id}">Dept</option></select></div>
+                    </div>
+                    <div class="fluent-grid" style="gap: var(--spacingHorizontalL);">
+                        <div class="fluent-form-group fluent-col-6"><label class="fluent-label">Storage Location</label>
+                            <select name="locationId" class="fluent-select"><option value="">Select</option><option th:each="loc : ${locations}" th:value="${loc.id}" th:text="${loc.name}" th:selected="${item?.locationId == loc.id}">Loc</option></select></div>
+                        <div class="fluent-form-group fluent-col-6"><label class="fluent-label">Price (USD) *</label><input type="number" name="priceUsd" class="fluent-input" step="0.01" min="0" th:value="${item?.priceUsd}" required/></div>
+                    </div>
+                    <div class="fluent-grid" style="gap: var(--spacingHorizontalL);">
+                        <div class="fluent-form-group fluent-col-4"><label class="fluent-label">Condition</label>
+                            <select name="condition" class="fluent-select"><option value="NEW">New</option><option value="LIKE_NEW">Like New</option><option value="GOOD">Good</option><option value="FAIR">Fair</option><option value="POOR">Poor</option></select></div>
+                        <div class="fluent-form-group fluent-col-4"><label class="fluent-label">Quantity Total</label><input type="number" name="quantityTotal" class="fluent-input" min="0" th:value="${item?.quantityTotal ?: 0}"/></div>
+                        <div class="fluent-form-group fluent-col-4"><label class="fluent-label">Quantity Available</label><input type="number" name="quantityAvailable" class="fluent-input" min="0" th:value="${item?.quantityAvailable ?: 0}"/></div>
+                    </div>
+                    <div class="fluent-form-group"><label class="fluent-label">Expiration Date</label><input type="date" name="expirationDate" class="fluent-input" th:value="${item?.expirationDate}"/></div>
+                    <div class="fluent-form-group"><label class="fluent-switch"><input type="checkbox" name="requiresApproval" th:checked="${item?.requiresApproval}"/><span class="fluent-switch-slider"></span></label> Requires Approval</div>
+                    <div class="d-flex" style="gap: var(--spacingHorizontalS); margin-top: var(--spacingVerticalL);">
+                        <button type="submit" class="fluent-btn fluent-btn--primary">Save Item</button>
+                        <a th:href="@{/admin/inventory}" class="fluent-btn fluent-btn--outline">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

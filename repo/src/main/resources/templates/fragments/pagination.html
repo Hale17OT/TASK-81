@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<nav th:fragment="pagination(page, baseUrl)" class="fluent-pagination" aria-label="Page navigation"
+     th:if="${page.totalPages > 1}">
+    <div class="fluent-pagination__info">
+        <span th:text="'Showing ' + ${page.number * page.size + 1} + '-' + ${T(Math).min((page.number + 1) * page.size, page.totalElements)} + ' of ' + ${page.totalElements}">
+            Showing 1-10 of 100
+        </span>
+    </div>
+
+    <ul class="fluent-pagination__list">
+        <!-- Previous button -->
+        <li class="fluent-pagination__item"
+            th:classappend="${page.number == 0} ? 'fluent-pagination__item--disabled'">
+            <a th:if="${page.number > 0}"
+               th:href="@{${baseUrl}(page=${page.number - 1})}"
+               class="fluent-pagination__link"
+               aria-label="Previous page">
+                &laquo; Previous
+            </a>
+            <span th:if="${page.number == 0}"
+                  class="fluent-pagination__link fluent-pagination__link--disabled"
+                  aria-disabled="true">
+                &laquo; Previous
+            </span>
+        </li>
+
+        <!-- Page numbers -->
+        <li th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}"
+            class="fluent-pagination__item"
+            th:if="${i == 0 or i == page.totalPages - 1 or (i >= page.number - 2 and i <= page.number + 2)}">
+            <a th:if="${i != page.number}"
+               th:href="@{${baseUrl}(page=${i})}"
+               th:text="${i + 1}"
+               class="fluent-pagination__link">1</a>
+            <span th:if="${i == page.number}"
+                  th:text="${i + 1}"
+                  class="fluent-pagination__link fluent-pagination__link--active"
+                  aria-current="page">1</span>
+        </li>
+
+        <!-- Next button -->
+        <li class="fluent-pagination__item"
+            th:classappend="${page.number == page.totalPages - 1} ? 'fluent-pagination__item--disabled'">
+            <a th:if="${page.number < page.totalPages - 1}"
+               th:href="@{${baseUrl}(page=${page.number + 1})}"
+               class="fluent-pagination__link"
+               aria-label="Next page">
+                Next &raquo;
+            </a>
+            <span th:if="${page.number >= page.totalPages - 1}"
+                  class="fluent-pagination__link fluent-pagination__link--disabled"
+                  aria-disabled="true">
+                Next &raquo;
+            </span>
+        </li>
+    </ul>
+</nav>
+
+</body>
+</html>

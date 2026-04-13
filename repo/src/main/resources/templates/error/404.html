@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Page Not Found</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-error">
+        <div class="fluent-empty-state">
+            <div class="fluent-empty-state__icon fluent-empty-state__icon--404"></div>
+            <h1 class="fluent-empty-state__title">404</h1>
+            <h2 class="fluent-empty-state__subtitle">Page Not Found</h2>
+            <p class="fluent-empty-state__description">
+                The page you are looking for does not exist or has been moved.
+            </p>
+            <div class="fluent-empty-state__actions">
+                <a th:href="@{/}" class="fluent-button fluent-button--primary">Back to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

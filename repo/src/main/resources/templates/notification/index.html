@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head><title>Notifications</title></head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-stack" style="gap: var(--spacingVerticalXXL);">
+        <div class="d-flex justify-between items-center">
+            <h1>Notification Center</h1>
+            <button id="mark-all-read" class="fluent-btn fluent-btn--outline">Mark All Read</button>
+        </div>
+        <div id="notification-list">
+            <div th:if="${notifications != null and notifications.content != null and !notifications.content.isEmpty()}">
+                <div th:each="notif : ${notifications.content}"
+                     th:class="'fluent-card notification-item ' + (${notif.isRead} ? 'notification-read' : 'notification-unread')"
+                     th:data-id="${notif.id}" style="margin-bottom: var(--spacingVerticalS);">
+                    <div class="fluent-card-body d-flex justify-between items-center">
+                        <div>
+                            <span class="fluent-badge" th:classappend="${notif.isCritical} ? 'fluent-badge--danger' : 'fluent-badge--info'"
+                                  th:text="${notif.type}">TYPE</span>
+                            <strong th:text="${notif.title}" style="margin-left: var(--spacingHorizontalS);">Title</strong>
+                            <p th:text="${notif.message}" style="margin: var(--spacingVerticalXS) 0;">Message</p>
+                            <small th:text="${#temporals.format(notif.createdAt, 'MMM dd, yyyy HH:mm')}" class="text-muted">Time</small>
+                        </div>
+                        <button th:unless="${notif.isRead}" class="fluent-btn fluent-btn--subtle fluent-btn--small mark-read-btn"
+                                th:onclick="'markNotificationRead(' + ${notif.id} + ', this.closest(\'.notification-item\'))'">Mark Read</button>
+                    </div>
+                </div>
+            </div>
+            <div th:if="${notifications == null or notifications.content == null or notifications.content.isEmpty()}" class="empty-state">
+                <h3>No notifications</h3>
+                <p>You're all caught up!</p>
+            </div>
+        </div>
+        <div th:if="${notifications != null and notifications.totalPages > 1}" th:replace="~{fragments/pagination :: pagination(${notifications}, '/notifications')}"></div>
+    </div>
+</div>
+<div layout:fragment="scripts">
+    <script th:src="@{/js/notifications.js}"></script>
+</div>
+</body>
+</html>

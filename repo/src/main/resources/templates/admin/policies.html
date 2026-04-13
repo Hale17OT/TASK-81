@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head><title>Governance Policies</title></head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-stack" style="gap: var(--spacingVerticalXXL);">
+        <div class="d-flex justify-between items-center">
+            <h1>Governance Policies</h1>
+        </div>
+
+        <div th:if="${successMessage}" class="fluent-banner fluent-banner--success"
+             th:text="${successMessage}">Saved</div>
+
+        <div class="fluent-card">
+            <div class="fluent-card-header">
+                <h2>Data Retention</h2>
+                <p class="fluent-text fluent-text--muted">
+                    Retention windows used by the nightly cleanup job. Editing these here is
+                    recorded as a <code>POLICY_UPDATE</code> in the audit log. Note: the
+                    <code>audit_log</code> policy is informational — its 7-year minimum is
+                    enforced server-side regardless of what is set here.
+                </p>
+            </div>
+            <div class="fluent-card-body">
+                <table class="fluent-table fluent-table--striped">
+                    <thead>
+                        <tr>
+                            <th>Entity Type</th>
+                            <th>Retention (days)</th>
+                            <th>Description</th>
+                            <th>Last Cleanup</th>
+                            <th>Update</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="p : ${policies}">
+                            <form th:action="@{/admin/policies/{type}(type=${p.entityType})}"
+                                  method="post" data-prevent-double-submit>
+                                <input type="hidden" th:name="${_csrf.parameterName}"
+                                       th:value="${_csrf.token}"/>
+                                <td><strong th:text="${p.entityType}">entity_type</strong></td>
+                                <td>
+                                    <input type="number" name="retentionDays" min="1"
+                                           class="fluent-input"
+                                           th:value="${p.retentionDays}" required/>
+                                </td>
+                                <td>
+                                    <input type="text" name="description" class="fluent-input"
+                                           th:value="${p.description}" maxlength="500"/>
+                                </td>
+                                <td>
+                                    <span th:text="${p.lastCleanupAt != null ? p.lastCleanupAt : 'never'}">never</span>
+                                </td>
+                                <td>
+                                    <button type="submit"
+                                            class="fluent-btn fluent-btn--primary fluent-btn--small"
+                                            data-confirm="Update retention policy?">Save</button>
+                                </td>
+                            </form>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div th:if="${policies == null or policies.isEmpty()}" class="empty-state">
+                    <p>No policies configured. The retention cleanup job will skip.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

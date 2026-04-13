@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>New Request</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-page fluent-page--new-request">
+
+        <!-- Back link -->
+        <div class="fluent-breadcrumb">
+            <a th:href="@{/inventory/{id}(id=${item.id})}" class="fluent-link fluent-link--back">Back to Item</a>
+        </div>
+
+        <h1 class="fluent-heading fluent-heading--lg">New Item Request</h1>
+
+        <!-- Item Summary -->
+        <div class="fluent-card fluent-card--summary">
+            <div class="fluent-card__body">
+                <h2 class="fluent-heading fluent-heading--md" th:text="${item.name}">Item Name</h2>
+                <div class="fluent-card__meta">
+                    <span class="fluent-badge fluent-badge--condition"
+                          th:text="${item.itemCondition}"
+                          th:classappend="'fluent-badge--' + ${item.itemCondition.name().toLowerCase()}">NEW</span>
+                    <span class="fluent-text fluent-text--price" th:text="'$' + ${item.priceUsd}">$0.00</span>
+                    <span class="fluent-text fluent-text--muted"
+                          th:text="${item.quantityAvailable} + ' available'">0 available</span>
+                </div>
+                <p class="fluent-text" th:text="${item.description}">Description</p>
+            </div>
+        </div>
+
+        <!-- Request Form -->
+        <div class="fluent-card fluent-card--form">
+            <form th:action="@{/requests/new}" method="post"
+                  class="fluent-form" id="requestForm">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <input type="hidden" name="itemId" th:value="${item.id}"/>
+
+                <!-- Quantity -->
+                <div class="fluent-form__field">
+                    <label for="quantity" class="fluent-label">Quantity</label>
+                    <input type="number" id="quantity" name="quantity"
+                           class="fluent-input"
+                           min="1"
+                           th:max="${item.quantityAvailable}"
+                           value="1"
+                           required/>
+                    <span class="fluent-form__help"
+                          th:text="'Maximum: ' + ${item.quantityAvailable}">Maximum: 0</span>
+                </div>
+
+                <!-- Justification -->
+                <div class="fluent-form__field">
+                    <label for="justification" class="fluent-label">Justification</label>
+                    <textarea id="justification" name="justification"
+                              class="fluent-textarea"
+                              placeholder="Explain why you need this item..."
+                              rows="4"
+                              required></textarea>
+                    <span class="fluent-form__help">Please provide a brief explanation for your request.</span>
+                </div>
+
+                <!-- Approval notice -->
+                <div class="fluent-alert fluent-alert--info" th:if="${item.requiresApproval}">
+                    <span>This item requires approval from a department teacher before it can be picked up.</span>
+                </div>
+
+                <!-- Submit -->
+                <div class="fluent-form__actions">
+                    <button type="submit" id="submitBtn"
+                            class="fluent-button fluent-button--primary"
+                            onclick="this.disabled=true; this.form.submit();">
+                        Submit Request
+                    </button>
+                    <a th:href="@{/inventory/{id}(id=${item.id})}"
+                       class="fluent-button fluent-button--outline">Cancel</a>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+</body>
+</html>

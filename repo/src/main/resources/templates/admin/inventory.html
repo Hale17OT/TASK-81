@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head><title>Manage Inventory</title></head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-stack" style="gap: var(--spacingVerticalXXL);">
+        <div class="d-flex justify-between items-center">
+            <h1>Inventory Management</h1>
+            <a th:href="@{/admin/inventory/new}" class="fluent-btn fluent-btn--primary">Create New Item</a>
+        </div>
+        <div class="fluent-card">
+            <div class="fluent-card-body">
+                <table class="fluent-table fluent-table--striped fluent-table--hover">
+                    <thead>
+                        <tr><th>Name</th><th>SKU</th><th>Category</th><th>Price</th><th>Available</th><th>Condition</th><th>Approval</th><th>Active</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="item : ${items.content}">
+                            <td th:text="${item.name}">Name</td>
+                            <td th:text="${item.sku}">SKU</td>
+                            <td th:text="${item.category?.name}">Category</td>
+                            <td th:text="'$' + ${#numbers.formatDecimal(item.priceUsd, 1, 2)}">$0.00</td>
+                            <td th:text="${item.quantityAvailable} + '/' + ${item.quantityTotal}">0/0</td>
+                            <td><span class="fluent-badge" th:text="${item.itemCondition}">NEW</span></td>
+                            <td><span th:if="${item.requiresApproval}" class="fluent-badge fluent-badge--warning">Yes</span><span th:unless="${item.requiresApproval}" class="fluent-badge fluent-badge--success">No</span></td>
+                            <td><span th:if="${item.isActive}" class="fluent-badge fluent-badge--success">Active</span><span th:unless="${item.isActive}" class="fluent-badge fluent-badge--danger">Inactive</span></td>
+                            <td class="d-flex" style="gap: var(--spacingHorizontalXS);">
+                                <a th:href="@{/admin/inventory/edit/{id}(id=${item.id})}" class="fluent-btn fluent-btn--outline fluent-btn--small">Edit</a>
+                                <form th:action="@{/admin/inventory/{id}/deactivate(id=${item.id})}" method="post">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                    <button type="submit" class="fluent-btn fluent-btn--danger fluent-btn--small" data-confirm="Deactivate this item?">Deactivate</button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div th:if="${items.content.isEmpty()}" class="empty-state"><p>No inventory items found.</p></div>
+            </div>
+        </div>
+        <div th:if="${items.totalPages > 1}" th:replace="~{fragments/pagination :: pagination(${items}, '/admin/inventory')}"></div>
+    </div>
+</div>
+</body>
+</html>

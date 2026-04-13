@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Error</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-error">
+        <div class="fluent-empty-state">
+            <div class="fluent-empty-state__icon fluent-empty-state__icon--error"></div>
+            <h1 class="fluent-empty-state__title" th:text="${status ?: 'Error'}">Error</h1>
+            <h2 class="fluent-empty-state__subtitle" th:text="${error ?: 'Something went wrong'}">Something went wrong</h2>
+            <p class="fluent-empty-state__description" th:text="${message ?: 'An unexpected error occurred. Please try again later.'}">
+                An unexpected error occurred. Please try again later.
+            </p>
+            <div class="fluent-empty-state__actions">
+                <a th:href="@{/}" class="fluent-button fluent-button--primary">Back to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

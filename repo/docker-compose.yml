@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: campusstore-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-campusstore_root}
+      MYSQL_DATABASE: campusstore
+      MYSQL_USER: ${MYSQL_USER:-campusstore}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-campusstore_pass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-campusstore_root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        KEYSTORE_PASSWORD: ${SERVER_SSL_KEY_STORE_PASSWORD:?SERVER_SSL_KEY_STORE_PASSWORD is required}
+    container_name: campusstore-app
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/campusstore?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-campusstore}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-campusstore_pass}
+      MASTER_KEY_PASSPHRASE: ${MASTER_KEY_PASSPHRASE:?MASTER_KEY_PASSPHRASE is required - set a secure passphrase}
+      SERVER_PORT: 8443
+      SERVER_SSL_ENABLED: "true"
+      SERVER_SSL_KEY_STORE: file:keystore.p12
+      SERVER_SSL_KEY_STORE_PASSWORD: ${SERVER_SSL_KEY_STORE_PASSWORD:?SERVER_SSL_KEY_STORE_PASSWORD is required}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8443:8443"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --insecure --silent --fail https://localhost:8443/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+volumes:
+  mysql-data:

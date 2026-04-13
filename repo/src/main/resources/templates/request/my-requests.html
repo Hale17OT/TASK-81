@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>My Requests</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-page fluent-page--requests">
+
+        <div class="fluent-page__header">
+            <h1 class="fluent-heading fluent-heading--lg">My Requests</h1>
+        </div>
+
+        <!-- Requests Table -->
+        <div class="fluent-table-container" th:if="${requests != null and requests.hasContent()}">
+            <table class="fluent-table">
+                <thead class="fluent-table__head">
+                    <tr>
+                        <th class="fluent-table__th">Item</th>
+                        <th class="fluent-table__th">Quantity</th>
+                        <th class="fluent-table__th">Status</th>
+                        <th class="fluent-table__th">Created</th>
+                        <th class="fluent-table__th">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="fluent-table__body">
+                    <tr th:each="req : ${requests.content}" class="fluent-table__row">
+                        <td class="fluent-table__td">
+                            <a th:href="@{/inventory/{id}(id=${req.item.id})}"
+                               th:text="${req.item.name}"
+                               class="fluent-link">Item Name</a>
+                        </td>
+                        <td class="fluent-table__td" th:text="${req.quantity}">1</td>
+                        <td class="fluent-table__td">
+                            <span class="fluent-badge fluent-badge--status"
+                                  th:text="${req.status}"
+                                  th:classappend="'fluent-badge--' + ${req.status.name().toLowerCase()}">PENDING</span>
+                        </td>
+                        <td class="fluent-table__td"
+                            th:text="${#temporals.format(req.createdAt, 'MMM d, yyyy h:mm a')}">Jan 1, 2025 12:00 PM</td>
+                        <td class="fluent-table__td">
+                            <a th:href="@{/requests/{id}(id=${req.id})}"
+                               class="fluent-button fluent-button--text fluent-button--sm">View</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <div th:replace="~{fragments/pagination :: pagination(${requests}, '/requests/mine')}"></div>
+        </div>
+
+        <!-- Mobile Card View -->
+        <div class="fluent-card-list fluent-card-list--mobile" th:if="${requests != null and requests.hasContent()}">
+            <div th:each="req : ${requests.content}" class="fluent-card fluent-card--request">
+                <div class="fluent-card__body">
+                    <div class="fluent-card__header-row">
+                        <h3 class="fluent-card__title">
+                            <a th:href="@{/requests/{id}(id=${req.id})}"
+                               th:text="${req.item.name}"
+                               class="fluent-link">Item Name</a>
+                        </h3>
+                        <span class="fluent-badge fluent-badge--status"
+                              th:text="${req.status}"
+                              th:classappend="'fluent-badge--' + ${req.status.name().toLowerCase()}">PENDING</span>
+                    </div>
+                    <div class="fluent-card__meta">
+                        <span th:text="'Qty: ' + ${req.quantity}">Qty: 1</span>
+                        <span th:text="${#temporals.format(req.createdAt, 'MMM d, yyyy')}">Jan 1, 2025</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="fluent-empty-state" th:if="${requests == null or !requests.hasContent()}">
+            <div class="fluent-empty-state__icon fluent-empty-state__icon--requests"></div>
+            <h3 class="fluent-empty-state__title">No requests yet</h3>
+            <p class="fluent-empty-state__description">
+                You have not made any item requests. Browse the inventory to get started.
+            </p>
+            <div class="fluent-empty-state__actions">
+                <a th:href="@{/search}" class="fluent-button fluent-button--primary">Browse Items</a>
+            </div>
+        </div>
+
+    </div>
+</div>
+</body>
+</html>

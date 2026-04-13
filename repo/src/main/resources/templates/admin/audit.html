@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head><title>Audit Log</title></head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-stack" style="gap: var(--spacingVerticalXXL);">
+        <h1>Audit Log</h1>
+        <div class="fluent-card">
+            <div class="fluent-card-header"><h2>Filters</h2></div>
+            <div class="fluent-card-body">
+                <form th:action="@{/admin/audit}" method="get" class="fluent-grid" style="gap: var(--spacingHorizontalL);">
+                    <div class="fluent-form-group fluent-col-3"><label class="fluent-label">Action</label><input type="text" name="action" class="fluent-input" th:value="${param.action}" placeholder="e.g., USER.LOGIN"/></div>
+                    <div class="fluent-form-group fluent-col-3"><label class="fluent-label">Entity Type</label><input type="text" name="entityType" class="fluent-input" th:value="${param.entityType}" placeholder="e.g., ItemRequest"/></div>
+                    <div class="fluent-form-group fluent-col-2"><label class="fluent-label">From</label><input type="date" name="from" class="fluent-input" th:value="${param.from}"/></div>
+                    <div class="fluent-form-group fluent-col-2"><label class="fluent-label">To</label><input type="date" name="to" class="fluent-input" th:value="${param.to}"/></div>
+                    <div class="fluent-form-group fluent-col-2 d-flex items-end"><button type="submit" class="fluent-btn fluent-btn--primary">Search</button></div>
+                </form>
+            </div>
+        </div>
+        <div class="fluent-card">
+            <div class="fluent-card-body">
+                <table class="fluent-table fluent-table--striped">
+                    <thead><tr><th>Timestamp</th><th>Actor</th><th>Action</th><th>Entity</th><th>Entity ID</th><th>IP</th></tr></thead>
+                    <tbody>
+                        <tr th:each="entry : ${entries.content}">
+                            <td th:text="${entry.createdAt}">Time</td>
+                            <td th:text="${entry.actorUsernameHash ?: ('User #' + entry.actorUserId)}">Actor</td>
+                            <td><span class="fluent-badge" th:text="${entry.action}">ACTION</span></td>
+                            <td th:text="${entry.entityType}">Type</td>
+                            <td th:text="${entry.entityId}">ID</td>
+                            <td th:text="${entry.ipAddress}">IP</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div th:if="${entries.content.isEmpty()}" class="empty-state"><p>No audit entries found.</p></div>
+            </div>
+        </div>
+        <div th:if="${entries.totalPages > 1}" th:replace="~{fragments/pagination :: pagination(${entries}, '/admin/audit')}"></div>
+    </div>
+</div>
+</body>
+</html>

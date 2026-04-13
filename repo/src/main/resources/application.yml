@@ -1,0 +1,80 @@
+spring:
+  application:
+    name: campusstore
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/campusstore?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:campusstore}
+    password: ${SPRING_DATASOURCE_PASSWORD:campusstore_pass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  thymeleaf:
+    cache: true
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+
+server:
+  port: ${SERVER_PORT:8443}
+  ssl:
+    enabled: ${SERVER_SSL_ENABLED:true}
+    key-store: ${SERVER_SSL_KEY_STORE:classpath:keystore.p12}
+    key-store-password: ${SERVER_SSL_KEY_STORE_PASSWORD}
+    key-store-type: PKCS12
+    key-alias: campusstore
+    enabled-protocols: TLSv1.3,TLSv1.2
+  error:
+    include-stacktrace: never
+    include-message: never
+
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+    com.campusstore: ${LOG_LEVEL:INFO}
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+campusstore:
+  master-key-passphrase: ${MASTER_KEY_PASSPHRASE}
+  encryption:
+    salt: campusstore-aes-salt-2026
+    iterations: 310000
+  rate-limit:
+    anonymous-requests-per-minute: 30
+    authenticated-requests-per-minute: 120
+    lockout-threshold: 10
+    lockout-duration-minutes: 5
+  retention:
+    operational-days: 365
+    audit-days: 2555
+    user-deletion-days: 30
+  crawler:
+    snapshot-cap: 50
+    success-rate-threshold: 95.0
+    latency-p95-threshold-ms: 2000

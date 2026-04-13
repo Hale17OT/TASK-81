@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Home</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="fluent-page fluent-page--home">
+
+        <!-- Welcome Section -->
+        <section class="fluent-section fluent-section--welcome">
+            <div class="fluent-card fluent-card--hero">
+                <h1 class="fluent-heading fluent-heading--xl">
+                    Welcome back, <span th:text="${displayName}">User</span>
+                </h1>
+                <p class="fluent-text fluent-text--subtitle">
+                    Browse campus inventory and request the items you need.
+                </p>
+            </div>
+        </section>
+
+        <!-- Search Bar -->
+        <section class="fluent-section fluent-section--search">
+            <div th:replace="~{fragments/search :: searchBar}"></div>
+        </section>
+
+        <!-- Trending Terms -->
+        <section class="fluent-section fluent-section--trending" th:if="${not #lists.isEmpty(trendingTerms)}">
+            <h2 class="fluent-heading fluent-heading--md">Trending Searches</h2>
+            <div class="fluent-chip-group">
+                <a th:each="term : ${trendingTerms}"
+                   th:href="@{/search(keyword=${term['term']})}"
+                   th:text="${term['term']}"
+                   class="fluent-chip fluent-chip--outline">term</a>
+            </div>
+        </section>
+
+        <!-- Recent Items Grid -->
+        <section class="fluent-section fluent-section--recent">
+            <h2 class="fluent-heading fluent-heading--md">Recently Added Items</h2>
+
+            <!-- Shimmer loading placeholders -->
+            <div class="fluent-grid fluent-grid--cards" id="itemsShimmer">
+                <div th:each="i : ${#numbers.sequence(1, 4)}" class="fluent-card fluent-card--shimmer">
+                    <div class="fluent-shimmer fluent-shimmer--image"></div>
+                    <div class="fluent-shimmer fluent-shimmer--title"></div>
+                    <div class="fluent-shimmer fluent-shimmer--text"></div>
+                    <div class="fluent-shimmer fluent-shimmer--text fluent-shimmer--short"></div>
+                </div>
+            </div>
+
+            <!-- Actual items grid -->
+            <div class="fluent-grid fluent-grid--cards" id="itemsGrid" th:if="${recentItems != null and recentItems.hasContent()}">
+                <div th:each="item : ${recentItems.content}" class="fluent-card fluent-card--item">
+                    <div class="fluent-card__body">
+                        <h3 class="fluent-card__title">
+                            <a th:href="@{/inventory/{id}(id=${item.id})}" th:text="${item.name}" class="fluent-link">Item Name</a>
+                        </h3>
+                        <p class="fluent-card__description" th:text="${item.description}">Item description</p>
+                        <div class="fluent-card__meta">
+                            <span class="fluent-badge fluent-badge--condition"
+                                  th:text="${item.itemCondition}"
+                                  th:classappend="'fluent-badge--' + ${item.itemCondition.name().toLowerCase()}">NEW</span>
+                            <span class="fluent-text fluent-text--price" th:text="'$' + ${item.priceUsd}">$0.00</span>
+                        </div>
+                        <div class="fluent-card__footer">
+                            <span class="fluent-text fluent-text--muted"
+                                  th:text="${item.quantityAvailable} + ' available'">0 available</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty state -->
+            <div class="fluent-empty-state" th:if="${recentItems == null or !recentItems.hasContent()}">
+                <div class="fluent-empty-state__icon fluent-empty-state__icon--items"></div>
+                <h3 class="fluent-empty-state__title">No items yet</h3>
+                <p class="fluent-empty-state__description">Check back later for new inventory items.</p>
+            </div>
+        </section>
+
+        <!-- Quick Action Cards -->
+        <section class="fluent-section fluent-section--actions">
+            <h2 class="fluent-heading fluent-heading--md">Quick Actions</h2>
+            <div class="fluent-grid fluent-grid--actions">
+                <a th:href="@{/search}" class="fluent-card fluent-card--action">
+                    <div class="fluent-card__icon fluent-card__icon--browse"></div>
+                    <h3 class="fluent-card__title">Browse Items</h3>
+                    <p class="fluent-card__description">Search and explore available inventory</p>
+                </a>
+
+                <a th:href="@{/requests/mine}" class="fluent-card fluent-card--action" sec:authorize="isAuthenticated()">
+                    <div class="fluent-card__icon fluent-card__icon--requests"></div>
+                    <h3 class="fluent-card__title">My Requests</h3>
+                    <p class="fluent-card__description">View and track your item requests</p>
+                </a>
+
+                <a th:href="@{/requests/pending}" class="fluent-card fluent-card--action" sec:authorize="hasRole('TEACHER')">
+                    <div class="fluent-card__icon fluent-card__icon--approvals"></div>
+                    <h3 class="fluent-card__title">Pending Approvals</h3>
+                    <p class="fluent-card__description">Review and approve student requests</p>
+                </a>
+
+                <a th:href="@{/profile}" class="fluent-card fluent-card--action" sec:authorize="isAuthenticated()">
+                    <div class="fluent-card__icon fluent-card__icon--profile"></div>
+                    <h3 class="fluent-card__title">My Profile</h3>
+                    <p class="fluent-card__description">Manage your account and preferences</p>
+                </a>
+
+                <a th:href="@{/admin/inventory}" class="fluent-card fluent-card--action" sec:authorize="hasRole('ADMIN')">
+                    <div class="fluent-card__icon fluent-card__icon--admin"></div>
+                    <h3 class="fluent-card__title">Admin Dashboard</h3>
+                    <p class="fluent-card__description">Manage inventory, users, and settings</p>
+                </a>
+            </div>
+        </section>
+
+    </div>
+</div>
+</body>
+</html>
