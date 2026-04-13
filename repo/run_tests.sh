@@ -5,6 +5,11 @@ echo "============================================"
 echo "  CampusStore Test Suite"
 echo "============================================"
 
+# Ensure the Maven wrapper is executable. On a fresh Linux clone of a repo authored on
+# Windows the executable bit is missing; this avoids "./mvnw: Permission denied" before
+# any test runs.
+chmod +x ./mvnw 2>/dev/null || true
+
 # ---- Unit Tests ----
 # JUnit 5 tag selection — see pom.xml properties test.tags.included / test.tags.excluded.
 # These values are passed straight to Surefire's <groups>/<excludedGroups>, which Surefire
