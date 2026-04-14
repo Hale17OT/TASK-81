@@ -37,6 +37,7 @@ public class UserRoleEntity {
     @Column(name = "granted_by")
     private Long grantedBy;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private UserEntity user;

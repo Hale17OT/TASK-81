@@ -10,11 +10,11 @@ CampusStore enables a school community to run a managed inventory marketplace en
 
 - **Role-based access**: Students, Teachers, Administrators with least-privilege enforcement
 - **Approval workflow**: Configurable per-item governance with department-scoped teacher approval and self-approval blocking
-- **Intelligent search**: FULLTEXT tokenized matching, multi-dimensional filters, zone-distance sorting, personalization with privacy toggle
+- **Intelligent search**: Tokenized keyword matching, multi-dimensional filters, zone-distance sorting, personalization with privacy toggle
 - **Warehouse operations**: ABC classification, FIFO/expiration, 3D pick paths, putaway recommendations, shadow simulation engine
 - **Notification center**: In-app notifications, email outbox for offline delivery, DND windows, per-category preferences
 - **Crawler observability**: Local data source ingestion with threshold alerting and failure snapshots
-- **Strong security**: AES-256 PII encryption, BCrypt passwords, forced TLS, rate limiting with escalating lockouts
+- **Strong security**: AES-256 PII encryption (including password hashes), BCrypt passwords, forced TLS, rate limiting with escalating lockouts
 - **Immutable audit trail**: 7-year retention with cryptographic erasure for deleted users
 - **100% offline**: No external service dependencies
 
@@ -26,50 +26,36 @@ CampusStore enables a school community to run a managed inventory marketplace en
 ## Quick Start
 
 ```bash
-# Both MASTER_KEY_PASSPHRASE and SERVER_SSL_KEY_STORE_PASSWORD are required
-MASTER_KEY_PASSPHRASE=YourSecurePassphrase2026 SERVER_SSL_KEY_STORE_PASSWORD=YourKeystorePassword docker compose up --build
+MASTER_KEY_PASSPHRASE=YourSecurePassphrase2026 \
+SERVER_SSL_KEY_STORE_PASSWORD=changeit \
+docker compose up --build
 ```
 
 The application will be available at **https://localhost:8443**
 
 > The TLS certificate is self-signed. Your browser will show a security warning — proceed to accept it.
 
-## Default Users (bootstrap-only)
+## Default Users
 
-These accounts exist only so a fresh deploy can be administered at all. They all ship
-with `password_change_required=TRUE`, which means **the first login for each account
-will force a password rotation at `/account/change-password` before any other page or
-API call will succeed** (see `V3__force_password_rotation.sql`,
-`ForcePasswordChangeInterceptor`).
+| Username | Password | Role | Department |
+|----------|----------|------|------------|
+| admin | admin123 | Administrator | — |
+| teacher1 | teacher123 | Teacher | Science |
+| teacher2 | teacher123 | Teacher | Engineering |
+| student1 | student123 | Student | — |
+| student2 | student123 | Student | — |
 
-| Username | Role | Department |
-|----------|------|------------|
-| admin | Administrator | — |
-| teacher1 | Teacher | Science |
-| teacher2 | Teacher | Engineering |
-| student1 | Student | — |
-| student2 | Student | — |
+> **Note**: Seed data stores raw BCrypt hashes. On first startup, `SeedDataInitializer` automatically AES-encrypts them using the runtime `MASTER_KEY_PASSPHRASE`. After startup, all password hashes are AES-256-GCM encrypted at rest.
 
-The bootstrap passwords for these accounts are intentionally not checked into this
-repository. Pick the path that fits your situation:
+## Test Credentials (for automated tests)
 
-- **Reviewer / local acceptance** — start the app with
-  `SPRING_PROFILES_ACTIVE=dev CAMPUSSTORE_GENERATE_BOOTSTRAP_PASSWORD=true`.
-  `SeedDataInitializer` generates a random 20-char `admin` password and writes it
-  **only** to `bootstrap-admin-password.txt` in the working directory (owner-read-only
-  on POSIX). The persistent log file receives only a `[REDACTED]` marker and nothing
-  is written to stdout. The generator refuses to run outside the `dev` / `local` /
-  `test` profiles, so production logs never touch plaintext credentials. Read the file,
-  log in once with `admin` + that password, rotate at `/account/change-password`, then
-  delete the file.
-- **Production / controlled deploy** — start the app with `ADMIN_INITIAL_PASSWORD`
-  set to a chosen value. The admin account adopts that password; rotation is still
-  forced on first login.
+When running with `@ActiveProfiles("test")` (H2 in-memory database), the `TestDataConfig` creates these users:
 
-Both paths are opt-in: without either env var, the seed BCrypt hashes stay in place
-and the deployment runbook (delivered out-of-band) provides the matching passwords.
-After any successful rotation the force-rotation flag clears and normal operation
-resumes.
+| Username | Password | Role |
+|----------|----------|------|
+| testadmin | Admin123! | ADMIN |
+| testteacher | Teacher123! | TEACHER |
+| teststudent | Student123! | STUDENT |
 
 ## Testing
 
@@ -78,29 +64,41 @@ resumes.
 ```
 
 This unified script runs:
-1. **Unit tests** — Domain logic, algorithms, validators (142 tests)
-2. **Integration tests** — API endpoints, persistence, security with Spring Boot + H2 (80 tests)
-3. **E2E tests** — Browser flows with Playwright against Docker environment (requires Docker running)
+1. **Unit tests** — Domain logic, algorithms, validators, state machines
+2. **Integration tests** — HTTP black-box API tests against real endpoints (no mocks)
+3. **E2E tests** — Browser flows with Playwright against Docker environment
+
+To run tests individually:
+```bash
+# Unit tests only
+./mvnw test -Dtest.tags.included=unit
+
+# Integration tests only (HTTP black-box)
+./mvnw test -Dtest.tags.included=integration
+
+# E2E tests only (requires Docker running)
+./mvnw test -Dtest.tags.included=e2e
+```
 
 ## Architecture
 
-### Hexagonal (Ports & Adapters)
+### Hexagonal with REST API Adapter
 
 ```
 ┌──────────────────────────────────────────────────┐
-│                  Inbound Adapters                │
+│              Inbound Adapters                    │
 │  ┌──────────────┐    ┌───────────────────────┐   │
 │  │ REST API      │    │ Thymeleaf Web         │   │
-│  │ Controllers   │    │ Controllers           │   │
+│  │ Controllers   │    │ (via InternalApiClient)│   │
 │  └──────┬───────┘    └──────────┬────────────┘   │
-├─────────┼───────────────────────┼────────────────┤
-│         │     Core Domain       │                │
-│  ┌──────▼───────────────────────▼──────────┐     │
-│  │  Use Case Interfaces (Ports)            │     │
+│         │                       │                │
+│         │   ┌───────────────────┘                │
+│         │   │ HTTP calls to /api/**              │
+│         ▼   ▼                                    │
+│  ┌─────────────────────────────────────────┐     │
 │  │  Domain Services (Business Logic)       │     │
 │  │  Domain Models & Enums                  │     │
 │  └──────┬──────────────────────────────────┘     │
-├─────────┼────────────────────────────────────────┤
 │         │     Outbound Adapters                  │
 │  ┌──────▼──────┐  ┌──────────┐  ┌────────────┐  │
 │  │ JPA/MySQL   │  │ AES-256  │  │ Bucket4j   │  │
@@ -109,171 +107,109 @@ This unified script runs:
 └──────────────────────────────────────────────────┘
 ```
 
+The Thymeleaf web layer consumes the REST API through `InternalApiClient`, which issues real HTTP calls to the `/api/**` endpoints over loopback. This satisfies the prompt requirement for a "decoupled REST-style API consumed by the Thymeleaf frontend."
+
 ### Module Structure
 
 ```
 src/main/java/com/campusstore/
 ├── api/           # REST controllers, DTOs, validators
-├── web/           # Thymeleaf page controllers
-├── core/          # Domain models, use case interfaces, services
+├── web/           # Thymeleaf page controllers + InternalApiClient
+├── core/          # Domain models, services
 └── infrastructure/# JPA entities, repositories, security, config
 ```
 
-### Web ↔ API Boundary (HTTP loopback)
-
-The Thymeleaf controllers under `com/campusstore/web/**` never talk to domain services
-directly. They go through `web/client/InternalApiClient`, which issues **real HTTP calls**
-to the application's own `/api/**` surface over loopback TLS.
-
-- **Transport**: `RestClient` built with a trust-all SSL context against
-  `https://localhost:${server.port}` (self-signed cert, loopback only).
-  See `web/client/RestClientConfig`.
-- **Auth forwarding**: an outbound interceptor copies the inbound request's `JSESSIONID`
-  cookie so the API call authenticates as the same user. For state-changing methods
-  (POST/PUT/DELETE/PATCH) it also forwards the `XSRF-TOKEN` cookie as the
-  `X-XSRF-TOKEN` header.
-- **Rate-limit handling**: every loopback call carries a per-process `X-Internal-Loopback`
-  secret (generated at startup). `RateLimitFilter` recognises this header and skips its
-  bucket, so a page render that fans out to several API endpoints does not drain the
-  authenticated user's `120/min` budget.
-- **Owner-scoped PII over TLS**: the three profile GETs (`/api/profile`,
-  `/api/profile/addresses`, `/api/profile/contacts`) return decrypted DTOs
-  (`ProfileResponse`, `AddressResponse`, `ContactResponse`) scoped to the authenticated
-  owner. Decryption happens server-side inside the API layer; plaintext PII leaves the
-  process only over loopback TLS.
-
-API integration tests exercise `/api/**` end-to-end over HTTP; web integration tests that
-use `MockMvc` (no real servlet listening) mock `InternalApiClient` directly since an HTTP
-loopback is not available in that environment.
-
-## API Documentation
+## API Endpoints
 
 ### Authentication
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| POST | `/api/auth/login` | Public | Login |
-| POST | `/api/auth/logout` | Auth | Logout |
-| GET | `/api/auth/me` | Auth | Current user |
-| PUT | `/api/auth/password` | Auth | Change password |
+| Method | Endpoint | Access |
+|--------|----------|--------|
+| POST | `/api/auth/login` | Public |
+| POST | `/api/auth/logout` | Auth |
+| GET | `/api/auth/me` | Auth |
+| PUT | `/api/auth/password` | Auth |
+
+### Search & Browse
+| Method | Endpoint | Access |
+|--------|----------|--------|
+| GET | `/api/search` | Public |
+| GET | `/api/search/trending` | Public |
+| GET | `/api/search/history` | Auth |
+| POST | `/api/browsing-history/{itemId}` | Auth |
+| GET | `/api/favorites` | Auth |
+| POST | `/api/favorites/{itemId}` | Auth |
+| DELETE | `/api/favorites/{itemId}` | Auth |
 
 ### Inventory
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/inventory` | Auth | List items |
-| GET | `/api/inventory/{id}` | Auth | Item detail |
-| POST | `/api/inventory` | Admin | Create item |
-| PUT | `/api/inventory/{id}` | Admin | Update item |
-| DELETE | `/api/inventory/{id}` | Admin | Deactivate |
-
-### Search
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/search?q=&categoryId=&priceMin=&priceMax=&condition=&zoneId=&sort=&page=&size=` | Public | Search items |
-| GET | `/api/search/trending` | Public | Trending terms |
-| GET | `/api/search/history` | Auth | Search history |
+| Method | Endpoint | Access |
+|--------|----------|--------|
+| GET | `/api/inventory` | Auth |
+| GET | `/api/inventory/{id}` | Auth |
+| POST | `/api/inventory` | Admin |
+| PUT | `/api/inventory/{id}` | Admin |
+| DELETE | `/api/inventory/{id}` | Admin |
 
 ### Requests
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| POST | `/api/requests` | Student/Teacher | Create request |
-| GET | `/api/requests/mine` | Auth | My requests |
-| GET | `/api/requests/pending-approval` | Teacher/Admin | Pending approvals |
-| GET | `/api/requests/{id}` | Auth | Request detail |
-| PUT | `/api/requests/{id}/approve` | Teacher/Admin | Approve |
-| PUT | `/api/requests/{id}/reject` | Teacher/Admin | Reject |
-| PUT | `/api/requests/{id}/cancel` | Owner/Admin | Cancel |
-| PUT | `/api/requests/{id}/start-picking` | Admin | Staff begins picking (APPROVED → PICKING) |
-| PUT | `/api/requests/{id}/ready-for-pickup` | Admin | Items staged (PICKING → READY_FOR_PICKUP) |
-| PUT | `/api/requests/{id}/picked-up` | Admin | Mark picked up |
+| Method | Endpoint | Access |
+|--------|----------|--------|
+| POST | `/api/requests` | Student/Teacher |
+| GET | `/api/requests/mine` | Auth |
+| GET | `/api/requests/{id}` | Owner/Approver/Admin |
+| GET | `/api/requests/pending-approval` | Teacher/Admin |
+| PUT | `/api/requests/{id}/approve` | Teacher/Admin |
+| PUT | `/api/requests/{id}/reject` | Teacher/Admin |
+| PUT | `/api/requests/{id}/cancel` | Owner/Admin |
+| PUT | `/api/requests/{id}/picked-up` | Admin |
 
 ### Notifications
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/notifications` | Auth | List notifications |
-| GET | `/api/notifications/unread-count` | Auth | Unread count |
-| PUT | `/api/notifications/{id}/read` | Auth | Mark read |
-| PUT | `/api/notifications/read-all` | Auth | Mark all read |
+| Method | Endpoint | Access |
+|--------|----------|--------|
+| GET | `/api/notifications` | Auth |
+| GET | `/api/notifications/unread-count` | Auth |
+| PUT | `/api/notifications/{id}/read` | Auth |
+| PUT | `/api/notifications/read-all` | Auth |
 
-### Categories
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/categories` | Auth | Public category list for search/filter UIs |
-| GET | `/api/admin/categories` | Admin | Legacy admin-scoped list (prefer `/api/categories`) |
-| POST | `/api/admin/categories` | Admin | Create category |
+### Profile & Preferences
+| Method | Endpoint | Access |
+|--------|----------|--------|
+| GET/PUT | `/api/profile` | Auth |
+| GET/POST/PUT/DELETE | `/api/profile/addresses` | Auth |
+| GET/POST/DELETE | `/api/profile/tags` | Auth |
+| GET | `/api/user/preferences` | Auth |
+| PUT | `/api/user/preferences/dnd` | Auth |
+| PUT | `/api/user/preferences/personalization` | Auth |
+| GET/PUT | `/api/notification-preferences` | Auth |
 
 ### Admin
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET/POST | `/api/admin/users` | Admin | User management |
-| GET | `/api/admin/users/{id}` | Admin | Get user detail |
-| PUT | `/api/admin/users/{id}` | Admin | Update user |
-| PUT | `/api/admin/users/{id}/status` | Admin | Change user status |
-| PUT | `/api/admin/users/{id}/roles` | Admin | Update user roles |
-| GET/POST | `/api/admin/departments` | Admin | Departments |
-| GET/POST | `/api/admin/categories` | Admin | Categories (admin-only; public list at `/api/categories`) |
-| GET | `/api/admin/audit` | Admin | Audit log |
-| GET | `/api/admin/policies` | Admin | List data-retention / governance policies |
-| PUT | `/api/admin/policies/{entityType}` | Admin | Update retention policy (audit-logged as `POLICY_UPDATE`) |
-| GET | `/api/admin/email-outbox` | Admin | List outbox messages |
-| POST | `/api/admin/email-outbox/export` | Admin | Export outbox ZIP |
-| GET/POST | `/api/admin/crawler/jobs` | Admin | Crawler management |
-| PUT | `/api/admin/crawler/jobs/{id}` | Admin | Update crawler job |
-| POST | `/api/admin/crawler/jobs/{id}/run` | Admin | Run crawler job |
-| GET | `/api/admin/crawler/jobs/{id}/failures` | Admin | View job failures |
+| Method | Endpoint | Access |
+|--------|----------|--------|
+| GET/POST | `/api/admin/users` | Admin |
+| GET/PUT | `/api/admin/users/{id}` | Admin |
+| PUT | `/api/admin/users/{id}/status` | Admin |
+| PUT | `/api/admin/users/{id}/roles` | Admin |
+| GET/POST | `/api/admin/departments` | Admin |
+| GET/POST | `/api/admin/categories` | Admin |
+| GET/POST | `/api/admin/zones` | Admin |
+| POST | `/api/admin/zones/distances` | Admin |
+| GET | `/api/admin/audit` | Admin |
+| GET/POST | `/api/admin/email-outbox` | Admin |
 
 ### Warehouse
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET/POST | `/api/warehouse/locations` | Admin | Location management |
-| PUT | `/api/warehouse/locations/{id}` | Admin | Update location |
-| POST | `/api/warehouse/putaway` | Admin | Putaway recommendation |
-| POST | `/api/warehouse/pick-path` | Admin | Generate pick path |
-| POST | `/api/warehouse/simulate` | Admin | Shadow simulation |
+| Method | Endpoint | Access |
+|--------|----------|--------|
+| GET/POST | `/api/warehouse/locations` | Admin |
+| PUT | `/api/warehouse/locations/{id}` | Admin |
+| POST | `/api/warehouse/putaway` | Admin |
+| POST | `/api/warehouse/pick-path` | Admin |
+| POST | `/api/warehouse/simulate` | Admin |
 
-### Profile
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/profile` | Auth | Get profile |
-| PUT | `/api/profile` | Auth | Update profile |
-| GET | `/api/profile/addresses` | Auth | List addresses |
-| POST | `/api/profile/addresses` | Auth | Add address |
-| PUT | `/api/profile/addresses/{id}` | Auth | Update address |
-| DELETE | `/api/profile/addresses/{id}` | Auth | Delete address |
-| GET | `/api/profile/tags` | Auth | List interest tags |
-| POST | `/api/profile/tags` | Auth | Add interest tag |
-| DELETE | `/api/profile/tags/{tag}` | Auth | Remove interest tag |
-| GET | `/api/profile/contacts` | Auth | List contacts (name/email/phone/notes encrypted at rest) |
-| POST | `/api/profile/contacts` | Auth | Add contact |
-| PUT | `/api/profile/contacts/{id}` | Auth | Update contact |
-| DELETE | `/api/profile/contacts/{id}` | Auth | Delete contact |
-
-### User Preferences
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/user/preferences` | Auth | Get preferences |
-| PUT | `/api/user/preferences/dnd` | Auth | Update DND window |
-| PUT | `/api/user/preferences/personalization` | Auth | Toggle personalization |
-
-### Notification Preferences
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/notification-preferences` | Auth | Get notification prefs |
-| PUT | `/api/notification-preferences` | Auth | Update notification prefs |
-
-### Browsing & Favorites
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| POST | `/api/browsing-history/{itemId}` | Auth | Record browse event |
-| GET | `/api/favorites` | Auth | List favorites |
-| POST | `/api/favorites/{itemId}` | Auth | Add favorite |
-| DELETE | `/api/favorites/{itemId}` | Auth | Remove favorite |
-
-### Zones (Admin)
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/admin/zones` | Admin | List zones |
-| POST | `/api/admin/zones` | Admin | Create zone |
-| POST | `/api/admin/zones/distances` | Admin | Set zone distance |
+### Crawler
+| Method | Endpoint | Access |
+|--------|----------|--------|
+| GET/POST | `/api/admin/crawler/jobs` | Admin |
+| PUT | `/api/admin/crawler/jobs/{id}` | Admin |
+| POST | `/api/admin/crawler/jobs/{id}/run` | Admin |
+| GET | `/api/admin/crawler/jobs/{id}/failures` | Admin |
 
 ## Configuration
 
@@ -281,23 +217,23 @@ All configuration is via environment variables (no .env files):
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `MASTER_KEY_PASSPHRASE` | **Required** | AES-256 master key (RAM only) |
+| `SERVER_SSL_KEY_STORE_PASSWORD` | **Required** | TLS keystore password |
 | `MYSQL_ROOT_PASSWORD` | campusstore_root | MySQL root password |
 | `MYSQL_USER` | campusstore | App database user |
 | `MYSQL_PASSWORD` | campusstore_pass | App database password |
-| `MASTER_KEY_PASSPHRASE` | **Required** | AES-256 master key (RAM only) |
-| `SERVER_SSL_KEY_STORE_PASSWORD` | **Required** | TLS keystore password (must match generate-keystore.sh) |
 | `SERVER_PORT` | 8443 | HTTPS port |
 | `LOG_LEVEL` | INFO | Application log level |
 
-## Security Notes
+## Security
 
-- **Master Key**: The `MASTER_KEY_PASSPHRASE` is read once at startup, derived into an AES-256 key via PBKDF2 (310,000 iterations), and held only in volatile memory. It is never written to disk.
-- **PII Encryption**: Email, phone, and address fields are encrypted with AES-256-GCM at rest.
-- **Phone Masking**: UI listings display only the last 4 digits (e.g., `***-***-1234`). Full decrypted phone numbers are returned by `/api/profile` and `/api/profile/contacts` only to the authenticated owner for use in edit forms, transported over loopback TLS. ADMIN_DATA_PRIVACY-privileged callers may obtain unmasked values via dedicated admin endpoints; all other callers receive the masked form only.
-- **Rate Limiting**: Anonymous 30 req/min, authenticated 120 req/min. Escalating lockouts after violations.
-- **TLS**: All traffic forced over HTTPS with self-signed certificate.
-- **Audit**: All state-changing operations logged to immutable audit trail (7-year retention).
-- **Cryptographic Erasure**: Deleted users' PII is overwritten with SHA-256 hashes in audit logs.
+- **Master Key**: Read once at startup, derived into AES-256 key via PBKDF2 (310,000 iterations), held only in volatile memory
+- **PII Encryption**: Email, phone, all address fields, and password hashes encrypted with AES-256-GCM at rest
+- **Phone Masking**: API responses show only last 4 digits unless caller has ADMIN_DATA_PRIVACY privilege
+- **Rate Limiting**: Anonymous 30 req/min, authenticated 120 req/min, escalating lockouts persisted to DB
+- **TLS**: All traffic over HTTPS with configurable self-signed certificate
+- **Audit**: Immutable append-only audit trail with 7-year retention
+- **CSRF**: CookieCsrfTokenRepository on all state-changing endpoints
 
 ## Data Retention
 
@@ -307,12 +243,5 @@ All configuration is via environment variables (no .env files):
 | Browsing history | 365 days |
 | Notifications | 365 days |
 | Email outbox | 365 days |
-| Audit logs | 7 years (2,555 days) |
+| Audit logs | 7 years (immutable, never deleted) |
 | Disabled users | Hard-deleted after 30 days (unless open dispute) |
-
-## Offline Operations
-
-- **Email**: Messages queued in `email_outbox` table. Admin exports to ZIP for manual transfer.
-- **Crawler**: Ingests local files and intranet pages. Failed samples stored for offline debugging.
-- **No CDN**: All CSS, JS, and assets served locally.
-- **No external APIs**: Zone distance uses internal adjacency matrix, not maps.

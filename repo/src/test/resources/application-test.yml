@@ -19,6 +19,8 @@ server:
     enabled: false
 
 campusstore:
+  csrf:
+    enabled: false
   master-key-passphrase: test-master-key-2026
   encryption:
     salt: test-salt

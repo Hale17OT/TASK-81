@@ -9,13 +9,20 @@ target/
 .settings/
 .project
 .classpath
+logs/
 
 # OS
 .DS_Store
 Thumbs.db
 
+# Logs
+logs/
+*.log
+*.log.gz
+
 # Sensitive files
 keystore.p12
+*.p12
 *.jks
 .env
 .claude/

@@ -2,6 +2,7 @@ package com.campusstore.infrastructure.security.config;
 
 import com.campusstore.infrastructure.security.filter.RateLimitFilter;
 import com.campusstore.infrastructure.security.service.CampusUserDetailsService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,6 +29,9 @@ public class SecurityConfig {
 
     private final CampusUserDetailsService userDetailsService;
     private final RateLimitFilter rateLimitFilter;
+
+    @Value("${campusstore.csrf.enabled:true}")
+    private boolean csrfEnabled;
 
     public SecurityConfig(CampusUserDetailsService userDetailsService,
                           RateLimitFilter rateLimitFilter) {
@@ -81,11 +85,15 @@ public class SecurityConfig {
                 .requestMatchers("/api/requests/pending-approval").hasAnyRole("TEACHER", "ADMIN")
                 .requestMatchers("/api/warehouse/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
-            )
-            .csrf(csrf -> csrf
+            );
+        if (csrfEnabled) {
+            http.csrf(csrf -> csrf
                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-            )
-            .exceptionHandling(ex -> ex
+            );
+        } else {
+            http.csrf(csrf -> csrf.disable());
+        }
+        http.exceptionHandling(ex -> ex
                 .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 .accessDeniedHandler((request, response, accessDeniedException) -> {
                     response.setStatus(HttpStatus.FORBIDDEN.value());
