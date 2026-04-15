@@ -21,6 +21,9 @@ class NotificationApiHttpTest extends BaseHttpApiTest {
         ResponseEntity<Map> response = client.get("/api/notifications", Map.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue((Boolean) response.getBody().get("success"));
+        Map<String, Object> data = (Map<String, Object>) response.getBody().get("data");
+        assertNotNull(data, "Notification list data must not be null");
+        assertNotNull(data.get("content"), "Notification list must include a content array");
     }
 
     @Test

@@ -23,7 +23,6 @@ CampusStore enables a school community to run a managed inventory marketplace en
 ## Prerequisites
 
 - Docker & Docker Compose (**required** — all runtime components are containerized)
-- (Optional, for local development only) Java 17+, Maven 3.9+
 
 ## Quick Start
 
@@ -83,29 +82,13 @@ When running with `@ActiveProfiles("test")` (H2 in-memory database), the `TestDa
 ## Testing
 
 ```bash
-# Fully containerized — no local Java/Maven required (recommended)
 ./run_tests.sh --docker
-
-# Host JVM path (requires Java 17+ and Maven; auto-detects if Java absent and falls back to --docker)
-./run_tests.sh
 ```
 
 This unified script runs:
 1. **Unit tests** — Domain logic, algorithms, validators, state machines
 2. **Integration tests** — HTTP black-box API tests against real endpoints (no mocks)
 3. **E2E tests** — Browser flows with Playwright against Docker environment
-
-To run tests individually (requires local Java 17+):
-```bash
-# Unit tests only
-./mvnw test -Dtest.tags.included=unit
-
-# Integration tests only (HTTP black-box)
-./mvnw test -Dtest.tags.included=integration
-
-# E2E tests only (requires Docker running)
-./mvnw test -Dtest.tags.included=e2e
-```
 
 ## Architecture
 

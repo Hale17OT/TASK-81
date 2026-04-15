@@ -20,6 +20,7 @@ class ZoneApiHttpTest extends BaseHttpApiTest {
         ResponseEntity<Map> response = client.get("/api/admin/zones", Map.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue((Boolean) response.getBody().get("success"));
+        assertNotNull(response.getBody().get("data"), "Zone list data must not be null");
     }
 
     @Test
