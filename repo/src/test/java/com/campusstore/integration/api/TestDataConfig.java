@@ -11,10 +11,12 @@ import com.campusstore.core.service.UserManagementService;
 import com.campusstore.core.service.WarehouseService;
 import com.campusstore.core.service.ZoneService;
 import com.campusstore.infrastructure.persistence.entity.CategoryEntity;
+import com.campusstore.infrastructure.persistence.entity.DataRetentionPolicyEntity;
 import com.campusstore.infrastructure.persistence.entity.DepartmentEntity;
 import com.campusstore.infrastructure.persistence.entity.InventoryItemEntity;
 import com.campusstore.infrastructure.persistence.entity.StorageLocationEntity;
 import com.campusstore.infrastructure.persistence.entity.ZoneEntity;
+import com.campusstore.infrastructure.persistence.repository.DataRetentionPolicyRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +45,8 @@ public class TestDataConfig {
             CategoryService categoryService,
             ZoneService zoneService,
             InventoryService inventoryService,
-            WarehouseService warehouseService) {
+            WarehouseService warehouseService,
+            DataRetentionPolicyRepository policyRepository) {
         return args -> {
             log.info("Seeding test data for HTTP integration tests");
 
@@ -97,6 +100,14 @@ public class TestDataConfig {
                     "teststudent@campus.edu", "5551110003",
                     Role.STUDENT, dept.getId(), null);
             log.info("Test student user created");
+
+            // 9. Seed data retention policies needed by PolicyAdminApiHttpTest
+            DataRetentionPolicyEntity policy = new DataRetentionPolicyEntity();
+            policy.setEntityType("search_log");
+            policy.setRetentionDays(365);
+            policy.setDescription("Search log entries retained for 1 year");
+            policyRepository.save(policy);
+            log.info("Test data retention policy seeded");
 
             log.info("Test data seeding complete");
         };

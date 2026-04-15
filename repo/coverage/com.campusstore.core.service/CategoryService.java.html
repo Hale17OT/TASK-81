@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CategoryService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.core.service</a> &gt; <span class="el_source">CategoryService.java</span></div><h1>CategoryService.java</h1><pre class="source lang-java linenums">package com.campusstore.core.service;
+
+import com.campusstore.core.domain.event.ConflictException;
+import com.campusstore.core.domain.event.ResourceNotFoundException;
+import com.campusstore.infrastructure.persistence.entity.CategoryEntity;
+import com.campusstore.infrastructure.persistence.repository.CategoryRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+public class CategoryService {
+
+<span class="fc" id="L17">    private static final Logger log = LoggerFactory.getLogger(CategoryService.class);</span>
+
+    private final CategoryRepository categoryRepository;
+    private final AuditService auditService;
+
+<span class="fc" id="L22">    public CategoryService(CategoryRepository categoryRepository, AuditService auditService) {</span>
+<span class="fc" id="L23">        this.categoryRepository = categoryRepository;</span>
+<span class="fc" id="L24">        this.auditService = auditService;</span>
+<span class="fc" id="L25">    }</span>
+
+    @Transactional(readOnly = true)
+    public List&lt;CategoryEntity&gt; listAll() {
+<span class="fc" id="L29">        return categoryRepository.findAll();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public CategoryEntity getById(Long id) {
+<span class="nc" id="L34">        return categoryRepository.findById(id)</span>
+<span class="nc" id="L35">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Category&quot;, id));</span>
+    }
+
+    @Transactional
+    public CategoryEntity create(String name, String description, Long parentId,
+                                  Long actorUserId) {
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">        if (categoryRepository.existsByName(name)) {</span>
+<span class="nc" id="L42">            throw new ConflictException(&quot;Category with name '&quot; + name + &quot;' already exists&quot;);</span>
+        }
+
+<span class="fc" id="L45">        CategoryEntity cat = new CategoryEntity();</span>
+<span class="fc" id="L46">        cat.setName(name);</span>
+<span class="fc" id="L47">        cat.setDescription(description);</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (parentId != null) {</span>
+            // The scalar `parent_id` column is insertable=false/updatable=false.
+            // Persistence happens via the @ManyToOne `parent` relationship.
+<span class="fc" id="L51">            CategoryEntity parent = categoryRepository.findById(parentId)</span>
+<span class="pc" id="L52">                    .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Parent category&quot;, parentId));</span>
+<span class="fc" id="L53">            cat.setParent(parent);</span>
+        }
+
+<span class="fc" id="L56">        CategoryEntity saved = categoryRepository.save(cat);</span>
+<span class="fc" id="L57">        log.info(&quot;Category created: {} (id={})&quot;, name, saved.getId());</span>
+<span class="fc" id="L58">        auditService.log(actorUserId, &quot;CATEGORY.CREATE&quot;, &quot;Category&quot;, saved.getId(),</span>
+                &quot;{\&quot;name\&quot;:\&quot;&quot; + name + &quot;\&quot;}&quot;);
+
+<span class="fc" id="L61">        return saved;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

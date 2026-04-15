@@ -2,6 +2,8 @@ package com.campusstore.infrastructure.persistence.entity;
 
 import com.campusstore.core.domain.model.SecurityLevel;
 import com.campusstore.core.domain.model.TemperatureZone;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,6 +20,7 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "storage_location")
 public class StorageLocationEntity {
@@ -161,6 +164,7 @@ public class StorageLocationEntity {
         this.updatedAt = updatedAt;
     }
 
+    @JsonIgnore
     public ZoneEntity getZone() {
         return zone;
     }

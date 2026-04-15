@@ -1,0 +1,686 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WarehouseService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.core.service</a> &gt; <span class="el_source">WarehouseService.java</span></div><h1>WarehouseService.java</h1><pre class="source lang-java linenums">package com.campusstore.core.service;
+
+import com.campusstore.core.domain.event.ResourceNotFoundException;
+import com.campusstore.core.domain.model.ABCClassification;
+import com.campusstore.core.domain.model.PickStatus;
+import com.campusstore.core.domain.model.SecurityLevel;
+import com.campusstore.core.domain.model.TemperatureZone;
+import com.campusstore.infrastructure.persistence.entity.InventoryItemEntity;
+import com.campusstore.infrastructure.persistence.entity.PathCostConfigEntity;
+import com.campusstore.infrastructure.persistence.entity.PickTaskEntity;
+import com.campusstore.infrastructure.persistence.entity.StorageLocationEntity;
+import com.campusstore.infrastructure.persistence.entity.ZoneEntity;
+import com.campusstore.infrastructure.persistence.repository.InventoryItemRepository;
+import com.campusstore.infrastructure.persistence.repository.PathCostConfigRepository;
+import com.campusstore.infrastructure.persistence.repository.PickTaskRepository;
+import com.campusstore.infrastructure.persistence.repository.StorageLocationRepository;
+import com.campusstore.infrastructure.persistence.repository.ZoneRepository;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+@Service
+@Transactional
+public class WarehouseService {
+
+<span class="fc" id="L43">    private static final Logger log = LoggerFactory.getLogger(WarehouseService.class);</span>
+
+    private final StorageLocationRepository storageLocationRepository;
+    private final InventoryItemRepository inventoryItemRepository;
+    private final PickTaskRepository pickTaskRepository;
+    private final PathCostConfigRepository pathCostConfigRepository;
+    private final ZoneRepository zoneRepository;
+    private final AuditService auditService;
+
+<span class="fc" id="L52">    public WarehouseService(StorageLocationRepository storageLocationRepository,</span>
+                            InventoryItemRepository inventoryItemRepository,
+                            PickTaskRepository pickTaskRepository,
+                            PathCostConfigRepository pathCostConfigRepository,
+                            ZoneRepository zoneRepository,
+                            AuditService auditService) {
+<span class="fc" id="L58">        this.storageLocationRepository = storageLocationRepository;</span>
+<span class="fc" id="L59">        this.inventoryItemRepository = inventoryItemRepository;</span>
+<span class="fc" id="L60">        this.pickTaskRepository = pickTaskRepository;</span>
+<span class="fc" id="L61">        this.pathCostConfigRepository = pathCostConfigRepository;</span>
+<span class="fc" id="L62">        this.zoneRepository = zoneRepository;</span>
+<span class="fc" id="L63">        this.auditService = auditService;</span>
+<span class="fc" id="L64">    }</span>
+
+    @Transactional(readOnly = true)
+    public List&lt;StorageLocationEntity&gt; recommendPutaway(Long itemId) {
+<span class="fc" id="L68">        Objects.requireNonNull(itemId, &quot;Item ID must not be null&quot;);</span>
+
+<span class="fc" id="L70">        InventoryItemEntity item = inventoryItemRepository.findById(itemId)</span>
+<span class="pc" id="L71">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;InventoryItem&quot;, itemId));</span>
+
+        // Get item attributes
+<span class="fc" id="L74">        TemperatureZone requiredTemp = null;</span>
+<span class="fc" id="L75">        SecurityLevel requiredSecurity = null;</span>
+<span class="fc" id="L76">        ABCClassification abcClass = item.getAbcClassification();</span>
+
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">        if (item.getLocation() != null) {</span>
+<span class="fc" id="L79">            requiredTemp = item.getLocation().getTemperatureZone();</span>
+<span class="fc" id="L80">            requiredSecurity = item.getLocation().getSecurityLevel();</span>
+        }
+
+        // Query available locations with capacity
+<span class="fc" id="L84">        List&lt;StorageLocationEntity&gt; availableLocations = storageLocationRepository.findLocationsWithAvailableCapacity();</span>
+
+        // Filter by temperature zone and security level if specified
+<span class="fc" id="L87">        final TemperatureZone finalTemp = requiredTemp;</span>
+<span class="fc" id="L88">        final SecurityLevel finalSecurity = requiredSecurity;</span>
+
+<span class="fc" id="L90">        List&lt;StorageLocationEntity&gt; filtered = availableLocations.stream()</span>
+<span class="fc" id="L91">                .filter(loc -&gt; {</span>
+<span class="pc bpc" id="L92" title="3 of 6 branches missed.">                    if (finalTemp != null &amp;&amp; loc.getTemperatureZone() != null &amp;&amp; loc.getTemperatureZone() != finalTemp) {</span>
+<span class="nc" id="L93">                        return false;</span>
+                    }
+<span class="pc bpc" id="L95" title="2 of 4 branches missed.">                    if (finalSecurity != null &amp;&amp; loc.getSecurityLevel() != null</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">                            &amp;&amp; loc.getSecurityLevel().ordinal() &lt; finalSecurity.ordinal()) {</span>
+<span class="nc" id="L97">                        return false;</span>
+                    }
+<span class="fc" id="L99">                    return true;</span>
+                })
+<span class="fc" id="L101">                .collect(Collectors.toList());</span>
+
+        // Sort by: ABC match (A items -&gt; level=0 easily accessible), then by remaining capacity
+<span class="fc" id="L104">        final ABCClassification finalAbcClass = abcClass;</span>
+<span class="fc" id="L105">        filtered.sort((a, b) -&gt; {</span>
+            // ABC match scoring: A items prefer level &quot;0&quot; or lower levels
+<span class="nc" id="L107">            int abcScoreA = computeAbcLocationScore(a, finalAbcClass);</span>
+<span class="nc" id="L108">            int abcScoreB = computeAbcLocationScore(b, finalAbcClass);</span>
+
+<span class="nc bnc" id="L110" title="All 2 branches missed.">            if (abcScoreA != abcScoreB) {</span>
+<span class="nc" id="L111">                return Integer.compare(abcScoreB, abcScoreA); // higher score first</span>
+            }
+
+            // Then by remaining capacity (more capacity first)
+<span class="nc bnc" id="L115" title="All 4 branches missed.">            int capA = (a.getCapacity() != null ? a.getCapacity() : 0) - (a.getCurrentOccupancy() != null ? a.getCurrentOccupancy() : 0);</span>
+<span class="nc bnc" id="L116" title="All 4 branches missed.">            int capB = (b.getCapacity() != null ? b.getCapacity() : 0) - (b.getCurrentOccupancy() != null ? b.getCurrentOccupancy() : 0);</span>
+<span class="nc" id="L117">            return Integer.compare(capB, capA);</span>
+        });
+
+<span class="fc" id="L120">        log.info(&quot;Putaway recommendations generated for item id={}: {} locations&quot;, itemId, filtered.size());</span>
+<span class="fc" id="L121">        return filtered;</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Map&lt;String, Object&gt; generatePickPath(List&lt;Long&gt; pickTaskIds) {
+<span class="fc" id="L126">        Objects.requireNonNull(pickTaskIds, &quot;Pick task IDs must not be null&quot;);</span>
+
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">        if (pickTaskIds.isEmpty()) {</span>
+<span class="nc" id="L129">            return Map.of(&quot;steps&quot;, List.of(), &quot;sequence&quot;, List.of(), &quot;totalCost&quot;, BigDecimal.ZERO);</span>
+        }
+
+        // Get all pick task locations with coordinates
+<span class="fc" id="L133">        List&lt;PickTaskEntity&gt; pickTasks = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        for (Long taskId : pickTaskIds) {</span>
+<span class="fc" id="L135">            pickTaskRepository.findById(taskId).ifPresent(pickTasks::add);</span>
+        }
+
+<span class="fc bfc" id="L138" title="All 2 branches covered.">        if (pickTasks.isEmpty()) {</span>
+<span class="fc" id="L139">            return Map.of(&quot;steps&quot;, List.of(), &quot;sequence&quot;, List.of(), &quot;totalCost&quot;, BigDecimal.ZERO);</span>
+        }
+
+        // Active PathCostConfig drives full matrix (horizontal/vertical/zone transition).
+<span class="fc" id="L143">        PathCostMatrix matrix = loadActiveMatrix();</span>
+
+        // Prepare location+expiration data from pick tasks
+<span class="fc" id="L146">        List&lt;PickLocationNode&gt; nodes = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        for (PickTaskEntity task : pickTasks) {</span>
+<span class="fc" id="L148">            StorageLocationEntity location = task.getLocation();</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">            if (location != null) {</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">                double x = location.getXCoord() != null ? location.getXCoord().doubleValue() : 0.0;</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">                double y = location.getYCoord() != null ? location.getYCoord().doubleValue() : 0.0;</span>
+<span class="fc" id="L152">                int level = parseLevel(location.getLevel());</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">                Long zoneId = location.getZone() != null ? location.getZone().getId() : null;</span>
+
+<span class="fc" id="L155">                LocalDate expirationDate = null;</span>
+<span class="fc" id="L156">                Instant itemCreated = null;</span>
+                try {
+<span class="fc" id="L158">                    var request = task.getRequest();</span>
+<span class="pc bpc" id="L159" title="2 of 4 branches missed.">                    if (request != null &amp;&amp; request.getItem() != null) {</span>
+<span class="fc" id="L160">                        expirationDate = request.getItem().getExpirationDate();</span>
+<span class="fc" id="L161">                        itemCreated = request.getItem().getCreatedAt();</span>
+                    }
+<span class="pc" id="L163">                } catch (Exception ignore) { /* best-effort; missing associations OK */ }</span>
+
+<span class="fc" id="L165">                nodes.add(new PickLocationNode(task.getId(), location.getId(), x, y, level, zoneId,</span>
+<span class="fc" id="L166">                        location.getName(), expirationDate, itemCreated));</span>
+            }
+        }
+
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        if (nodes.isEmpty()) {</span>
+<span class="nc" id="L171">            return Map.of(&quot;steps&quot;, List.of(), &quot;sequence&quot;, List.of(), &quot;totalCost&quot;, BigDecimal.ZERO);</span>
+        }
+
+        // FIFO / expiration policy: pick items that expire sooner first. Bucket by urgency,
+        // so items expiring within 7 days are always picked before items expiring later,
+        // even if a slightly closer non-urgent location exists. Within a bucket we still
+        // minimize travel via nearest-neighbor with full-matrix cost.
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        for (PickLocationNode node : nodes) {</span>
+<span class="fc" id="L179">            node.urgencyBucket = urgencyBucket(node.expirationDate);</span>
+        }
+
+<span class="fc" id="L182">        List&lt;PickLocationNode&gt; sequence = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L183">        List&lt;Map&lt;String, Object&gt;&gt; steps = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L184">        boolean[] visited = new boolean[nodes.size()];</span>
+<span class="fc" id="L185">        double currentX = 0.0, currentY = 0.0;</span>
+<span class="fc" id="L186">        int currentLevel = 0;</span>
+<span class="fc" id="L187">        Long currentZoneId = null;</span>
+<span class="fc" id="L188">        BigDecimal totalCost = BigDecimal.ZERO;</span>
+
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        for (int step = 0; step &lt; nodes.size(); step++) {</span>
+<span class="fc" id="L191">            int currentBucket = lowestRemainingBucket(nodes, visited);</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">            if (currentBucket == Integer.MAX_VALUE) break;</span>
+
+<span class="fc" id="L194">            double minCost = Double.MAX_VALUE;</span>
+<span class="fc" id="L195">            int nearestIdx = -1;</span>
+<span class="fc" id="L196">            LocalDate bestExpiry = null;</span>
+<span class="fc" id="L197">            Instant bestCreated = null;</span>
+
+<span class="fc bfc" id="L199" title="All 2 branches covered.">            for (int i = 0; i &lt; nodes.size(); i++) {</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">                if (visited[i]) continue;</span>
+<span class="fc" id="L201">                PickLocationNode cand = nodes.get(i);</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">                if (cand.urgencyBucket != currentBucket) continue; // strict bucket priority</span>
+
+<span class="fc" id="L204">                double cost = matrix.cost(currentX, currentY, currentLevel, currentZoneId,</span>
+<span class="fc" id="L205">                        cand.x, cand.y, cand.level, cand.zoneId);</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">                boolean closer = cost &lt; minCost;</span>
+                // Tie-break: sooner expiration, then earlier createdAt (FIFO).
+                // Compare LocalDate by value — two different instances holding the
+                // same date must still match so the createdAt FIFO rule fires.
+<span class="fc bfc" id="L210" title="All 2 branches covered.">                boolean tie = Math.abs(cost - minCost) &lt; 1e-9;</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">                boolean fifoBetter = tie &amp;&amp; (</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">                        isExpirationSooner(cand.expirationDate, bestExpiry)</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">                        || (Objects.equals(cand.expirationDate, bestExpiry)</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">                                &amp;&amp; isEarlier(cand.itemCreatedAt, bestCreated))</span>
+                );
+<span class="fc bfc" id="L216" title="All 4 branches covered.">                if (closer || fifoBetter) {</span>
+<span class="fc" id="L217">                    minCost = cost;</span>
+<span class="fc" id="L218">                    nearestIdx = i;</span>
+<span class="fc" id="L219">                    bestExpiry = cand.expirationDate;</span>
+<span class="fc" id="L220">                    bestCreated = cand.itemCreatedAt;</span>
+                }
+            }
+
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">            if (nearestIdx == -1) break;</span>
+
+<span class="fc" id="L226">            visited[nearestIdx] = true;</span>
+<span class="fc" id="L227">            PickLocationNode node = nodes.get(nearestIdx);</span>
+<span class="fc" id="L228">            sequence.add(node);</span>
+
+<span class="fc" id="L230">            BigDecimal stepCost = BigDecimal.valueOf(minCost).setScale(4, RoundingMode.HALF_UP);</span>
+<span class="fc" id="L231">            totalCost = totalCost.add(stepCost);</span>
+
+<span class="fc" id="L233">            Map&lt;String, Object&gt; stepInfo = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L234">            stepInfo.put(&quot;order&quot;, step + 1);</span>
+<span class="fc" id="L235">            stepInfo.put(&quot;pickTaskId&quot;, node.pickTaskId);</span>
+<span class="fc" id="L236">            stepInfo.put(&quot;locationId&quot;, node.locationId);</span>
+<span class="fc" id="L237">            stepInfo.put(&quot;locationName&quot;, node.locationName);</span>
+<span class="fc" id="L238">            stepInfo.put(&quot;stepCost&quot;, stepCost);</span>
+<span class="fc" id="L239">            stepInfo.put(&quot;urgencyBucket&quot;, node.urgencyBucket);</span>
+<span class="fc" id="L240">            stepInfo.put(&quot;expirationDate&quot;, node.expirationDate);</span>
+<span class="fc" id="L241">            steps.add(stepInfo);</span>
+
+<span class="fc" id="L243">            currentX = node.x;</span>
+<span class="fc" id="L244">            currentY = node.y;</span>
+<span class="fc" id="L245">            currentLevel = node.level;</span>
+<span class="fc" id="L246">            currentZoneId = node.zoneId;</span>
+        }
+
+        // Return to origin
+<span class="pc bpc" id="L250" title="1 of 2 branches missed.">        if (!sequence.isEmpty()) {</span>
+<span class="fc" id="L251">            double returnCost = matrix.cost(currentX, currentY, currentLevel, currentZoneId,</span>
+<span class="fc" id="L252">                    0, 0, 0, null);</span>
+<span class="fc" id="L253">            BigDecimal returnCostBd = BigDecimal.valueOf(returnCost).setScale(4, RoundingMode.HALF_UP);</span>
+<span class="fc" id="L254">            totalCost = totalCost.add(returnCostBd);</span>
+
+<span class="fc" id="L256">            Map&lt;String, Object&gt; returnStep = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L257">            returnStep.put(&quot;order&quot;, sequence.size() + 1);</span>
+<span class="fc" id="L258">            returnStep.put(&quot;pickTaskId&quot;, null);</span>
+<span class="fc" id="L259">            returnStep.put(&quot;locationName&quot;, &quot;ORIGIN&quot;);</span>
+<span class="fc" id="L260">            returnStep.put(&quot;stepCost&quot;, returnCostBd);</span>
+<span class="fc" id="L261">            steps.add(returnStep);</span>
+        }
+
+<span class="fc" id="L264">        Map&lt;String, Object&gt; result = new LinkedHashMap&lt;&gt;();</span>
+        // UI consumes `steps`; keep `sequence` as backward-compatible alias.
+<span class="fc" id="L266">        result.put(&quot;steps&quot;, steps);</span>
+<span class="fc" id="L267">        result.put(&quot;sequence&quot;, steps);</span>
+<span class="fc" id="L268">        result.put(&quot;totalCost&quot;, totalCost.setScale(4, RoundingMode.HALF_UP));</span>
+
+<span class="fc" id="L270">        log.info(&quot;Pick path generated with {} stops, totalCost={}&quot;, sequence.size(), totalCost);</span>
+<span class="fc" id="L271">        return result;</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Map&lt;String, Object&gt; runSimulation(String proposedConfigJson) {
+<span class="fc" id="L276">        log.info(&quot;Starting shadow picking simulation&quot;);</span>
+
+        // Load last 1000 completed pick tasks
+<span class="fc" id="L279">        List&lt;PickTaskEntity&gt; completedTasks = pickTaskRepository.findByStatusIn(</span>
+<span class="fc" id="L280">                List.of(PickStatus.COMPLETED));</span>
+
+        // Limit to last 1000
+<span class="pc bpc" id="L283" title="1 of 2 branches missed.">        if (completedTasks.size() &gt; 1000) {</span>
+<span class="nc" id="L284">            completedTasks = completedTasks.subList(completedTasks.size() - 1000, completedTasks.size());</span>
+        }
+
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        if (completedTasks.isEmpty()) {</span>
+            // Keep response schema identical to the populated branch so UI rendering is
+            // key-parity safe on fresh deployments with no completed picks.
+<span class="fc" id="L290">            Map&lt;String, Object&gt; emptyReport = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L291">            emptyReport.put(&quot;orderCount&quot;, 0);</span>
+<span class="fc" id="L292">            emptyReport.put(&quot;avgStepsSaved&quot;, 0.0);</span>
+<span class="fc" id="L293">            emptyReport.put(&quot;totalCostSaved&quot;, 0.0);</span>
+<span class="fc" id="L294">            emptyReport.put(&quot;totalTimeSaved&quot;, 0.0);</span>
+<span class="fc" id="L295">            emptyReport.put(&quot;proposedVsActualRatio&quot;, 1.0);</span>
+<span class="fc" id="L296">            emptyReport.put(&quot;improvements&quot;, List.of());</span>
+<span class="fc" id="L297">            return emptyReport;</span>
+        }
+
+        // Baseline (currently active) matrix — what today's picks actually cost.
+<span class="fc" id="L301">        PathCostMatrix currentMatrix = loadActiveMatrix();</span>
+
+        // Proposed matrix — overlay any coefficients the caller supplied on top of the
+        // active matrix. Missing keys fall back to the active config, so a caller can
+        // vary just levelMultiplier without re-specifying horizontal/zone weights.
+<span class="fc" id="L306">        double proposedHorizontal = currentMatrix.horizontalWeight;</span>
+<span class="fc" id="L307">        double proposedVertical = currentMatrix.verticalWeight;</span>
+<span class="fc" id="L308">        double proposedZone = currentMatrix.zoneTransitionWeight;</span>
+<span class="pc bpc" id="L309" title="2 of 4 branches missed.">        if (proposedConfigJson != null &amp;&amp; !proposedConfigJson.isBlank()) {</span>
+<span class="fc" id="L310">            Double h = extractJsonNumber(proposedConfigJson, &quot;horizontalWeight&quot;);</span>
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">            if (h != null) proposedHorizontal = h;</span>
+<span class="fc" id="L312">            Double lm = extractJsonNumber(proposedConfigJson, &quot;levelMultiplier&quot;);</span>
+<span class="fc" id="L313">            Double vw = extractJsonNumber(proposedConfigJson, &quot;verticalWeight&quot;);</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">            if (vw != null) proposedVertical = vw;</span>
+<span class="pc bpc" id="L315" title="1 of 2 branches missed.">            else if (lm != null) proposedVertical = lm; // alias</span>
+<span class="fc" id="L316">            Double z = extractJsonNumber(proposedConfigJson, &quot;zoneTransitionWeight&quot;);</span>
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">            if (z != null) proposedZone = z;</span>
+        }
+<span class="fc" id="L319">        PathCostMatrix proposedMatrix = new PathCostMatrix(</span>
+<span class="fc" id="L320">                proposedHorizontal, proposedVertical, proposedZone);</span>
+
+        // Group completed tasks by request to form orders
+<span class="fc" id="L323">        Map&lt;Long, List&lt;PickTaskEntity&gt;&gt; orderGroups = completedTasks.stream()</span>
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">                .filter(t -&gt; t.getRequestId() != null)</span>
+<span class="fc" id="L325">                .collect(Collectors.groupingBy(PickTaskEntity::getRequestId));</span>
+
+<span class="fc" id="L327">        double totalActualCost = 0.0;</span>
+<span class="fc" id="L328">        double totalProposedCost = 0.0;</span>
+<span class="fc" id="L329">        List&lt;Map&lt;String, Object&gt;&gt; improvements = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L331" title="All 2 branches covered.">        for (Map.Entry&lt;Long, List&lt;PickTaskEntity&gt;&gt; entry : orderGroups.entrySet()) {</span>
+<span class="fc" id="L332">            List&lt;PickTaskEntity&gt; tasks = entry.getValue();</span>
+
+            // Calculate actual cost (sum of recorded path costs)
+<span class="fc" id="L335">            double actualCost = tasks.stream()</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">                    .filter(t -&gt; t.getPickPathCost() != null)</span>
+<span class="fc" id="L337">                    .mapToDouble(t -&gt; t.getPickPathCost().doubleValue())</span>
+<span class="fc" id="L338">                    .sum();</span>
+
+            // If no recorded cost, estimate from locations using the current matrix
+<span class="fc bfc" id="L341" title="All 2 branches covered.">            if (actualCost == 0.0) {</span>
+<span class="fc" id="L342">                actualCost = estimatePathCost(tasks, currentMatrix);</span>
+            }
+
+            // Recalculate with proposed matrix (honors horizontal/vertical/zone weights)
+<span class="fc" id="L346">            double proposedCost = estimatePathCost(tasks, proposedMatrix);</span>
+
+<span class="fc" id="L348">            totalActualCost += actualCost;</span>
+<span class="fc" id="L349">            totalProposedCost += proposedCost;</span>
+
+<span class="fc bfc" id="L351" title="All 2 branches covered.">            if (proposedCost &lt; actualCost) {</span>
+<span class="fc" id="L352">                Map&lt;String, Object&gt; imp = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L353">                imp.put(&quot;requestId&quot;, entry.getKey());</span>
+<span class="fc" id="L354">                imp.put(&quot;actualCost&quot;, BigDecimal.valueOf(actualCost).setScale(4, RoundingMode.HALF_UP));</span>
+<span class="fc" id="L355">                imp.put(&quot;proposedCost&quot;, BigDecimal.valueOf(proposedCost).setScale(4, RoundingMode.HALF_UP));</span>
+<span class="fc" id="L356">                imp.put(&quot;savings&quot;, BigDecimal.valueOf(actualCost - proposedCost).setScale(4, RoundingMode.HALF_UP));</span>
+<span class="fc" id="L357">                improvements.add(imp);</span>
+            }
+        }
+
+<span class="fc" id="L361">        int totalOrders = orderGroups.size();</span>
+<span class="pc bpc" id="L362" title="1 of 2 branches missed.">        double avgStepsSaved = totalOrders &gt; 0 ? (totalActualCost - totalProposedCost) / totalOrders : 0.0;</span>
+<span class="fc" id="L363">        double totalSaved = totalActualCost - totalProposedCost;</span>
+<span class="pc bpc" id="L364" title="1 of 2 branches missed.">        double ratio = totalActualCost &gt; 0 ? totalProposedCost / totalActualCost : 1.0;</span>
+
+<span class="fc" id="L366">        Map&lt;String, Object&gt; report = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L367">        report.put(&quot;orderCount&quot;, totalOrders);</span>
+<span class="fc" id="L368">        report.put(&quot;avgStepsSaved&quot;, BigDecimal.valueOf(avgStepsSaved).setScale(4, RoundingMode.HALF_UP));</span>
+<span class="fc" id="L369">        report.put(&quot;totalCostSaved&quot;, BigDecimal.valueOf(totalSaved).setScale(4, RoundingMode.HALF_UP));</span>
+        // Retain prior key name for backward compatibility.
+<span class="fc" id="L371">        report.put(&quot;totalTimeSaved&quot;, BigDecimal.valueOf(totalSaved).setScale(4, RoundingMode.HALF_UP));</span>
+<span class="fc" id="L372">        report.put(&quot;proposedVsActualRatio&quot;, BigDecimal.valueOf(ratio).setScale(4, RoundingMode.HALF_UP));</span>
+<span class="fc" id="L373">        report.put(&quot;improvements&quot;, improvements);</span>
+
+<span class="fc" id="L375">        log.info(&quot;Simulation completed: {} orders analyzed, ratio={}&quot;, totalOrders, ratio);</span>
+<span class="fc" id="L376">        return report;</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Page&lt;StorageLocationEntity&gt; listLocations(Pageable pageable) {
+<span class="fc" id="L381">        return storageLocationRepository.findAll(pageable);</span>
+    }
+
+    public StorageLocationEntity createLocation(String name, Long zoneId, BigDecimal xCoord, BigDecimal yCoord,
+                                                 Integer level, TemperatureZone temperatureZone,
+                                                 SecurityLevel securityLevel, Integer capacity,
+                                                 Long createdByUserId) {
+<span class="fc" id="L388">        Objects.requireNonNull(name, &quot;Location name must not be null&quot;);</span>
+
+<span class="fc" id="L390">        ZoneEntity zone = null;</span>
+<span class="pc bpc" id="L391" title="1 of 2 branches missed.">        if (zoneId != null) {</span>
+<span class="fc" id="L392">            zone = zoneRepository.findById(zoneId)</span>
+<span class="pc" id="L393">                    .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Zone&quot;, zoneId));</span>
+        }
+
+<span class="fc" id="L396">        StorageLocationEntity location = new StorageLocationEntity();</span>
+<span class="fc" id="L397">        location.setName(name);</span>
+<span class="pc bpc" id="L398" title="1 of 2 branches missed.">        if (zone != null) {</span>
+<span class="fc" id="L399">            location.setZone(zone);</span>
+        }
+<span class="fc" id="L401">        location.setXCoord(xCoord);</span>
+<span class="fc" id="L402">        location.setYCoord(yCoord);</span>
+<span class="fc" id="L403">        location.setLevel(level);</span>
+<span class="fc" id="L404">        location.setTemperatureZone(temperatureZone);</span>
+<span class="fc" id="L405">        location.setSecurityLevel(securityLevel);</span>
+<span class="pc bpc" id="L406" title="1 of 2 branches missed.">        location.setCapacity(capacity != null ? capacity : 0);</span>
+<span class="fc" id="L407">        location.setCurrentOccupancy(0);</span>
+<span class="fc" id="L408">        location.setCreatedAt(Instant.now());</span>
+<span class="fc" id="L409">        location.setUpdatedAt(Instant.now());</span>
+
+<span class="fc" id="L411">        StorageLocationEntity saved = storageLocationRepository.save(location);</span>
+
+<span class="fc" id="L413">        auditService.log(createdByUserId, &quot;CREATE_LOCATION&quot;, &quot;StorageLocation&quot;, saved.getId(),</span>
+<span class="fc" id="L414">                &quot;{\&quot;name\&quot;:\&quot;&quot; + name + &quot;\&quot;}&quot;);</span>
+<span class="fc" id="L415">        log.info(&quot;Storage location created id={}, name={}&quot;, saved.getId(), name);</span>
+<span class="fc" id="L416">        return saved;</span>
+    }
+
+    public StorageLocationEntity updateLocation(Long locationId, String name, BigDecimal xCoord,
+                                                 BigDecimal yCoord, Integer level,
+                                                 Integer capacity, Long updatedByUserId) {
+<span class="fc" id="L422">        Objects.requireNonNull(locationId, &quot;Location ID must not be null&quot;);</span>
+
+<span class="fc" id="L424">        StorageLocationEntity location = storageLocationRepository.findById(locationId)</span>
+<span class="pc" id="L425">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;StorageLocation&quot;, locationId));</span>
+
+<span class="pc bpc" id="L427" title="1 of 2 branches missed.">        if (name != null) {</span>
+<span class="fc" id="L428">            location.setName(name);</span>
+        }
+<span class="pc bpc" id="L430" title="1 of 2 branches missed.">        if (xCoord != null) {</span>
+<span class="fc" id="L431">            location.setXCoord(xCoord);</span>
+        }
+<span class="pc bpc" id="L433" title="1 of 2 branches missed.">        if (yCoord != null) {</span>
+<span class="fc" id="L434">            location.setYCoord(yCoord);</span>
+        }
+<span class="pc bpc" id="L436" title="1 of 2 branches missed.">        if (level != null) {</span>
+<span class="fc" id="L437">            location.setLevel(level);</span>
+        }
+<span class="pc bpc" id="L439" title="1 of 2 branches missed.">        if (capacity != null) {</span>
+<span class="fc" id="L440">            location.setCapacity(capacity);</span>
+        }
+<span class="fc" id="L442">        location.setUpdatedAt(Instant.now());</span>
+
+<span class="fc" id="L444">        StorageLocationEntity saved = storageLocationRepository.save(location);</span>
+
+<span class="fc" id="L446">        auditService.log(updatedByUserId, &quot;UPDATE_LOCATION&quot;, &quot;StorageLocation&quot;, locationId, &quot;{}&quot;);</span>
+<span class="fc" id="L447">        log.info(&quot;Storage location updated id={}&quot;, locationId);</span>
+<span class="fc" id="L448">        return saved;</span>
+    }
+
+    private double calculateCost(double x1, double y1, int level1,
+                                  double x2, double y2, int level2,
+                                  double levelMultiplier) {
+<span class="nc" id="L454">        double horizontalDist = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));</span>
+<span class="nc" id="L455">        double verticalCost = Math.abs(level2 - level1) * levelMultiplier;</span>
+<span class="nc" id="L456">        return horizontalDist + verticalCost;</span>
+    }
+
+    private int parseLevel(Integer level) {
+<span class="pc bpc" id="L460" title="1 of 2 branches missed.">        return level != null ? level : 0;</span>
+    }
+
+    private int computeAbcLocationScore(StorageLocationEntity location, ABCClassification abcClass) {
+<span class="nc bnc" id="L464" title="All 2 branches missed.">        if (abcClass == null) return 0;</span>
+
+<span class="nc" id="L466">        int levelValue = parseLevel(location.getLevel());</span>
+
+<span class="nc bnc" id="L468" title="All 3 branches missed.">        return switch (abcClass) {</span>
+<span class="nc bnc" id="L469" title="All 2 branches missed.">            case A -&gt; levelValue == 0 ? 10 : Math.max(0, 10 - levelValue * 2);</span>
+<span class="nc bnc" id="L470" title="All 2 branches missed.">            case B -&gt; levelValue &lt;= 1 ? 5 : Math.max(0, 5 - levelValue);</span>
+<span class="nc" id="L471">            case C -&gt; 0; // C items can go anywhere</span>
+        };
+    }
+
+    private double estimatePathCost(List&lt;PickTaskEntity&gt; tasks, double levelMultiplier) {
+        // Use the active matrix with the caller-supplied level multiplier, so simulations
+        // can compare different vertical-weight proposals under the same matrix shape.
+<span class="nc" id="L478">        PathCostMatrix base = loadActiveMatrix();</span>
+<span class="nc" id="L479">        PathCostMatrix matrix = new PathCostMatrix(</span>
+<span class="nc" id="L480">                base.horizontalWeight, levelMultiplier, base.zoneTransitionWeight);</span>
+<span class="nc" id="L481">        return estimatePathCost(tasks, matrix);</span>
+    }
+
+    private double estimatePathCost(List&lt;PickTaskEntity&gt; tasks, PathCostMatrix matrix) {
+<span class="pc bpc" id="L485" title="1 of 2 branches missed.">        if (tasks.isEmpty()) return 0.0;</span>
+
+<span class="fc" id="L487">        List&lt;PickLocationNode&gt; nodes = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L488" title="All 2 branches covered.">        for (PickTaskEntity task : tasks) {</span>
+<span class="fc" id="L489">            StorageLocationEntity loc = task.getLocation();</span>
+<span class="pc bpc" id="L490" title="1 of 2 branches missed.">            if (loc != null) {</span>
+<span class="pc bpc" id="L491" title="1 of 2 branches missed.">                double x = loc.getXCoord() != null ? loc.getXCoord().doubleValue() : 0.0;</span>
+<span class="pc bpc" id="L492" title="1 of 2 branches missed.">                double y = loc.getYCoord() != null ? loc.getYCoord().doubleValue() : 0.0;</span>
+<span class="fc" id="L493">                int level = parseLevel(loc.getLevel());</span>
+<span class="fc bfc" id="L494" title="All 2 branches covered.">                Long zoneId = loc.getZone() != null ? loc.getZone().getId() : null;</span>
+<span class="fc" id="L495">                LocalDate exp = null;</span>
+<span class="fc" id="L496">                Instant itemCreated = null;</span>
+                try {
+<span class="fc" id="L498">                    var request = task.getRequest();</span>
+<span class="pc bpc" id="L499" title="1 of 4 branches missed.">                    if (request != null &amp;&amp; request.getItem() != null) {</span>
+<span class="fc" id="L500">                        exp = request.getItem().getExpirationDate();</span>
+<span class="fc" id="L501">                        itemCreated = request.getItem().getCreatedAt();</span>
+                    }
+<span class="pc" id="L503">                } catch (Exception ignore) { /* OK */ }</span>
+<span class="fc" id="L504">                PickLocationNode node = new PickLocationNode(</span>
+<span class="fc" id="L505">                        task.getId(), loc.getId(), x, y, level, zoneId, loc.getName(), exp, itemCreated);</span>
+<span class="fc" id="L506">                node.urgencyBucket = urgencyBucket(exp);</span>
+<span class="fc" id="L507">                nodes.add(node);</span>
+            }
+        }
+
+<span class="pc bpc" id="L511" title="1 of 2 branches missed.">        if (nodes.isEmpty()) return 0.0;</span>
+
+        // FIFO/expiration-aware nearest-neighbor, matching generatePickPath semantics so
+        // the simulation report reflects the same picking strategy as production.
+<span class="fc" id="L515">        boolean[] visited = new boolean[nodes.size()];</span>
+<span class="fc" id="L516">        double cx = 0, cy = 0;</span>
+<span class="fc" id="L517">        int cl = 0;</span>
+<span class="fc" id="L518">        Long cz = null;</span>
+<span class="fc" id="L519">        double totalCost = 0.0;</span>
+
+<span class="fc bfc" id="L521" title="All 2 branches covered.">        for (int step = 0; step &lt; nodes.size(); step++) {</span>
+<span class="fc" id="L522">            int bucket = lowestRemainingBucket(nodes, visited);</span>
+<span class="pc bpc" id="L523" title="1 of 2 branches missed.">            if (bucket == Integer.MAX_VALUE) break;</span>
+
+<span class="fc" id="L525">            double minCost = Double.MAX_VALUE;</span>
+<span class="fc" id="L526">            int nearest = -1;</span>
+<span class="fc bfc" id="L527" title="All 2 branches covered.">            for (int i = 0; i &lt; nodes.size(); i++) {</span>
+<span class="pc bpc" id="L528" title="1 of 2 branches missed.">                if (visited[i]) continue;</span>
+<span class="fc" id="L529">                PickLocationNode n = nodes.get(i);</span>
+<span class="pc bpc" id="L530" title="1 of 2 branches missed.">                if (n.urgencyBucket != bucket) continue;</span>
+<span class="fc" id="L531">                double cost = matrix.cost(cx, cy, cl, cz, n.x, n.y, n.level, n.zoneId);</span>
+<span class="pc bpc" id="L532" title="1 of 2 branches missed.">                if (cost &lt; minCost) {</span>
+<span class="fc" id="L533">                    minCost = cost;</span>
+<span class="fc" id="L534">                    nearest = i;</span>
+                }
+            }
+<span class="pc bpc" id="L537" title="1 of 2 branches missed.">            if (nearest == -1) break;</span>
+<span class="fc" id="L538">            visited[nearest] = true;</span>
+<span class="fc" id="L539">            totalCost += minCost;</span>
+<span class="fc" id="L540">            cx = nodes.get(nearest).x;</span>
+<span class="fc" id="L541">            cy = nodes.get(nearest).y;</span>
+<span class="fc" id="L542">            cl = nodes.get(nearest).level;</span>
+<span class="fc" id="L543">            cz = nodes.get(nearest).zoneId;</span>
+        }
+
+        // Return to origin
+<span class="fc" id="L547">        totalCost += matrix.cost(cx, cy, cl, cz, 0, 0, 0, null);</span>
+<span class="fc" id="L548">        return totalCost;</span>
+    }
+
+    /**
+     * Mutable pick-list node with FIFO/expiration context and zone linkage so the cost
+     * matrix can compute zone-transition penalties.
+     */
+    private static final class PickLocationNode {
+        final Long pickTaskId;
+        final Long locationId;
+        final double x;
+        final double y;
+        final int level;
+        final Long zoneId;
+        final String locationName;
+        final LocalDate expirationDate;
+        final Instant itemCreatedAt;
+        int urgencyBucket;
+
+        PickLocationNode(Long pickTaskId, Long locationId, double x, double y, int level,
+                          String locationName) {
+<span class="nc" id="L569">            this(pickTaskId, locationId, x, y, level, null, locationName, null, null);</span>
+<span class="nc" id="L570">        }</span>
+
+<span class="fc" id="L572">        PickLocationNode(Long pickTaskId, Long locationId, double x, double y, int level,</span>
+                          Long zoneId, String locationName,
+                          LocalDate expirationDate, Instant itemCreatedAt) {
+<span class="fc" id="L575">            this.pickTaskId = pickTaskId;</span>
+<span class="fc" id="L576">            this.locationId = locationId;</span>
+<span class="fc" id="L577">            this.x = x;</span>
+<span class="fc" id="L578">            this.y = y;</span>
+<span class="fc" id="L579">            this.level = level;</span>
+<span class="fc" id="L580">            this.zoneId = zoneId;</span>
+<span class="fc" id="L581">            this.locationName = locationName;</span>
+<span class="fc" id="L582">            this.expirationDate = expirationDate;</span>
+<span class="fc" id="L583">            this.itemCreatedAt = itemCreatedAt;</span>
+<span class="fc" id="L584">        }</span>
+    }
+
+    /**
+     * Configurable path-cost matrix parsed from {@code path_cost_config.config_json}.
+     * Supports: {@code horizontalWeight} (default 1.0), {@code verticalWeight} (default = entity
+     * level_multiplier), {@code zoneTransitionWeight} (default 0.0). Missing JSON falls back to
+     * the scalar {@code level_multiplier} only, preserving legacy behavior.
+     */
+    private static final class PathCostMatrix {
+        final double horizontalWeight;
+        final double verticalWeight;
+        final double zoneTransitionWeight;
+
+<span class="fc" id="L598">        PathCostMatrix(double horizontalWeight, double verticalWeight, double zoneTransitionWeight) {</span>
+<span class="fc" id="L599">            this.horizontalWeight = horizontalWeight;</span>
+<span class="fc" id="L600">            this.verticalWeight = verticalWeight;</span>
+<span class="fc" id="L601">            this.zoneTransitionWeight = zoneTransitionWeight;</span>
+<span class="fc" id="L602">        }</span>
+
+        double cost(double x1, double y1, int level1, Long zone1,
+                    double x2, double y2, int level2, Long zone2) {
+<span class="fc" id="L606">            double horizontal = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))</span>
+<span class="fc" id="L607">                    * horizontalWeight;</span>
+<span class="fc" id="L608">            double vertical = Math.abs(level2 - level1) * verticalWeight;</span>
+<span class="fc" id="L609">            double zonePenalty = 0.0;</span>
+<span class="fc bfc" id="L610" title="All 6 branches covered.">            if (zone1 != null &amp;&amp; zone2 != null &amp;&amp; !zone1.equals(zone2)) {</span>
+<span class="fc" id="L611">                zonePenalty = zoneTransitionWeight;</span>
+            }
+<span class="fc" id="L613">            return horizontal + vertical + zonePenalty;</span>
+        }
+    }
+
+    private PathCostMatrix loadActiveMatrix() {
+<span class="fc" id="L618">        double horizontal = 1.0;</span>
+<span class="fc" id="L619">        double vertical = 2.0;</span>
+<span class="fc" id="L620">        double zoneTransition = 0.0;</span>
+
+<span class="fc" id="L622">        List&lt;PathCostConfigEntity&gt; configs = pathCostConfigRepository.findByIsActiveTrue();</span>
+<span class="fc bfc" id="L623" title="All 2 branches covered.">        if (!configs.isEmpty()) {</span>
+<span class="fc" id="L624">            PathCostConfigEntity cfg = configs.get(0);</span>
+<span class="pc bpc" id="L625" title="1 of 2 branches missed.">            if (cfg.getLevelMultiplier() != null) {</span>
+<span class="fc" id="L626">                vertical = cfg.getLevelMultiplier().doubleValue();</span>
+            }
+<span class="fc" id="L628">            String json = cfg.getConfigJson();</span>
+<span class="pc bpc" id="L629" title="1 of 4 branches missed.">            if (json != null &amp;&amp; !json.isBlank()) {</span>
+<span class="fc" id="L630">                Double h = extractJsonNumber(json, &quot;horizontalWeight&quot;);</span>
+<span class="pc bpc" id="L631" title="1 of 2 branches missed.">                if (h != null) horizontal = h;</span>
+<span class="fc" id="L632">                Double v = extractJsonNumber(json, &quot;verticalWeight&quot;);</span>
+<span class="pc bpc" id="L633" title="1 of 2 branches missed.">                if (v != null) vertical = v;</span>
+<span class="fc" id="L634">                Double z = extractJsonNumber(json, &quot;zoneTransitionWeight&quot;);</span>
+<span class="pc bpc" id="L635" title="1 of 2 branches missed.">                if (z != null) zoneTransition = z;</span>
+            }
+        }
+<span class="fc" id="L638">        return new PathCostMatrix(horizontal, vertical, zoneTransition);</span>
+    }
+
+    /** Lightweight extractor — avoids a Jackson dependency for a handful of scalar keys. */
+    private static Double extractJsonNumber(String json, String key) {
+<span class="fc" id="L643">        java.util.regex.Matcher m = java.util.regex.Pattern</span>
+<span class="fc" id="L644">                .compile(&quot;\&quot;&quot; + java.util.regex.Pattern.quote(key) + &quot;\&quot;\\s*:\\s*(-?[0-9]*\\.?[0-9]+)&quot;)</span>
+<span class="fc" id="L645">                .matcher(json);</span>
+<span class="fc bfc" id="L646" title="All 2 branches covered.">        if (m.find()) {</span>
+<span class="fc" id="L647">            try { return Double.parseDouble(m.group(1)); }</span>
+<span class="nc" id="L648">            catch (NumberFormatException ignore) { return null; }</span>
+        }
+<span class="fc" id="L650">        return null;</span>
+    }
+
+    /**
+     * Urgency bucket for FIFO/expiration picking priority. Lower bucket is picked first.
+     * 0 = expired / expires within 7 days, 1 = 8–30 days, 2 = 31+ days, 3 = no expiry (non-perishable).
+     */
+    private static int urgencyBucket(LocalDate expirationDate) {
+<span class="fc bfc" id="L658" title="All 2 branches covered.">        if (expirationDate == null) return 3;</span>
+<span class="fc" id="L659">        long days = ChronoUnit.DAYS.between(LocalDate.now(), expirationDate);</span>
+<span class="fc bfc" id="L660" title="All 2 branches covered.">        if (days &lt;= 7) return 0;</span>
+<span class="pc bpc" id="L661" title="1 of 2 branches missed.">        if (days &lt;= 30) return 1;</span>
+<span class="fc" id="L662">        return 2;</span>
+    }
+
+    private static int lowestRemainingBucket(List&lt;PickLocationNode&gt; nodes, boolean[] visited) {
+<span class="fc" id="L666">        int lowest = Integer.MAX_VALUE;</span>
+<span class="fc bfc" id="L667" title="All 2 branches covered.">        for (int i = 0; i &lt; nodes.size(); i++) {</span>
+<span class="fc bfc" id="L668" title="All 2 branches covered.">            if (visited[i]) continue;</span>
+<span class="fc bfc" id="L669" title="All 2 branches covered.">            if (nodes.get(i).urgencyBucket &lt; lowest) lowest = nodes.get(i).urgencyBucket;</span>
+        }
+<span class="fc" id="L671">        return lowest;</span>
+    }
+
+    private static boolean isExpirationSooner(LocalDate a, LocalDate b) {
+<span class="fc bfc" id="L675" title="All 2 branches covered.">        if (a == null) return false;</span>
+<span class="pc bpc" id="L676" title="1 of 2 branches missed.">        if (b == null) return true;</span>
+<span class="fc" id="L677">        return a.isBefore(b);</span>
+    }
+
+    private static boolean isEarlier(Instant a, Instant b) {
+<span class="pc bpc" id="L681" title="1 of 2 branches missed.">        if (a == null) return false;</span>
+<span class="pc bpc" id="L682" title="1 of 2 branches missed.">        if (b == null) return true;</span>
+<span class="fc" id="L683">        return a.isBefore(b);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

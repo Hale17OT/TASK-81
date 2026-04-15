@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProfileWebController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.web.controller</a> &gt; <span class="el_source">ProfileWebController.java</span></div><h1>ProfileWebController.java</h1><pre class="source lang-java linenums">package com.campusstore.web.controller;
+
+import com.campusstore.api.dto.AddressResponse;
+import com.campusstore.api.dto.ContactResponse;
+import com.campusstore.api.dto.ProfileResponse;
+import com.campusstore.infrastructure.persistence.entity.NotificationPreferenceEntity;
+import com.campusstore.infrastructure.persistence.entity.UserPreferenceEntity;
+import com.campusstore.infrastructure.security.service.CampusUserPrincipal;
+import com.campusstore.web.client.InternalApiClient;
+
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * Thymeleaf profile pages. All data — including decrypted PII scoped to the authenticated
+ * owner — is obtained via {@link InternalApiClient} over HTTP. This controller does NOT
+ * hold or reference {@code AesEncryptionService}; decryption for owner-facing views is
+ * performed server-side inside the API layer, and the resulting plaintext DTOs arrive via
+ * the loopback TLS call.
+ */
+@Controller
+@RequestMapping(&quot;/profile&quot;)
+public class ProfileWebController {
+
+    private final InternalApiClient apiClient;
+
+<span class="fc" id="L39">    public ProfileWebController(InternalApiClient apiClient) {</span>
+<span class="fc" id="L40">        this.apiClient = apiClient;</span>
+<span class="fc" id="L41">    }</span>
+
+    @GetMapping
+    public String profile(@AuthenticationPrincipal CampusUserPrincipal principal,
+                          Model model) {
+<span class="nc" id="L46">        model.addAttribute(&quot;currentPage&quot;, &quot;profile&quot;);</span>
+
+<span class="nc" id="L48">        ProfileResponse dto = apiClient.getProfile(principal.getUserId());</span>
+<span class="nc" id="L49">        Map&lt;String, Object&gt; profile = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L50">        profile.put(&quot;username&quot;, dto.getUsername());</span>
+<span class="nc" id="L51">        profile.put(&quot;displayName&quot;, dto.getDisplayName());</span>
+<span class="nc" id="L52">        profile.put(&quot;email&quot;, dto.getEmail());</span>
+<span class="nc" id="L53">        profile.put(&quot;phone&quot;, dto.getPhone());</span>
+<span class="nc" id="L54">        profile.put(&quot;phoneLast4&quot;, dto.getPhoneLast4());</span>
+<span class="nc" id="L55">        model.addAttribute(&quot;profile&quot;, profile);</span>
+
+<span class="nc" id="L57">        return &quot;profile/index&quot;;</span>
+    }
+
+    @GetMapping(&quot;/addresses&quot;)
+    public String addresses(@AuthenticationPrincipal CampusUserPrincipal principal,
+                            Model model) {
+<span class="nc" id="L63">        model.addAttribute(&quot;currentPage&quot;, &quot;profile&quot;);</span>
+
+<span class="nc" id="L65">        List&lt;AddressResponse&gt; raw = apiClient.getAddresses(principal.getUserId());</span>
+<span class="nc" id="L66">        List&lt;Map&lt;String, Object&gt;&gt; addresses = raw.stream().map(a -&gt; {</span>
+<span class="nc" id="L67">            Map&lt;String, Object&gt; m = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L68">            m.put(&quot;id&quot;, a.getId());</span>
+<span class="nc" id="L69">            m.put(&quot;label&quot;, a.getLabel());</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">            m.put(&quot;street&quot;, a.getStreet() != null ? a.getStreet() : &quot;&quot;);</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">            m.put(&quot;city&quot;, a.getCity() != null ? a.getCity() : &quot;&quot;);</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">            m.put(&quot;state&quot;, a.getState() != null ? a.getState() : &quot;&quot;);</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">            m.put(&quot;zipCode&quot;, a.getZipCode() != null ? a.getZipCode() : &quot;&quot;);</span>
+<span class="nc" id="L74">            m.put(&quot;isPrimary&quot;, a.getIsPrimary());</span>
+<span class="nc" id="L75">            return m;</span>
+<span class="nc" id="L76">        }).collect(Collectors.toList());</span>
+
+<span class="nc" id="L78">        model.addAttribute(&quot;addresses&quot;, addresses);</span>
+<span class="nc" id="L79">        return &quot;profile/addresses&quot;;</span>
+    }
+
+    @GetMapping(&quot;/contacts&quot;)
+    public String contacts(@AuthenticationPrincipal CampusUserPrincipal principal,
+                            Model model) {
+<span class="nc" id="L85">        model.addAttribute(&quot;currentPage&quot;, &quot;profile&quot;);</span>
+
+<span class="nc" id="L87">        List&lt;ContactResponse&gt; raw = apiClient.getContacts(principal.getUserId());</span>
+<span class="nc" id="L88">        List&lt;Map&lt;String, Object&gt;&gt; contacts = raw.stream().map(c -&gt; {</span>
+<span class="nc" id="L89">            Map&lt;String, Object&gt; m = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L90">            m.put(&quot;id&quot;, c.getId());</span>
+<span class="nc" id="L91">            m.put(&quot;label&quot;, c.getLabel());</span>
+<span class="nc" id="L92">            m.put(&quot;relationship&quot;, c.getRelationship());</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">            m.put(&quot;name&quot;, c.getName() != null ? c.getName() : &quot;&quot;);</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">            m.put(&quot;email&quot;, c.getEmail() != null ? c.getEmail() : &quot;&quot;);</span>
+            // Display only the masked form (last 4) in listing; the raw phone is omitted from
+            // the model and only loaded into the edit form on demand. The UI never renders
+            // the full decrypted phone in plain text.
+<span class="nc" id="L98">            String last4 = c.getPhoneLast4();</span>
+<span class="nc bnc" id="L99" title="All 4 branches missed.">            m.put(&quot;phoneMasked&quot;, (last4 != null &amp;&amp; !last4.isBlank()) ? (&quot;***-***-&quot; + last4) : &quot;&quot;);</span>
+<span class="nc" id="L100">            m.put(&quot;phoneLast4&quot;, last4);</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            m.put(&quot;phone&quot;, c.getPhone() != null ? c.getPhone() : &quot;&quot;);</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">            m.put(&quot;notes&quot;, c.getNotes() != null ? c.getNotes() : &quot;&quot;);</span>
+<span class="nc" id="L103">            m.put(&quot;isPrimary&quot;, c.getIsPrimary());</span>
+<span class="nc" id="L104">            return m;</span>
+<span class="nc" id="L105">        }).collect(Collectors.toList());</span>
+
+<span class="nc" id="L107">        model.addAttribute(&quot;contacts&quot;, contacts);</span>
+<span class="nc" id="L108">        return &quot;profile/contacts&quot;;</span>
+    }
+
+    @PostMapping(&quot;/contacts&quot;)
+    public String addContact(@AuthenticationPrincipal CampusUserPrincipal principal,
+                              @RequestParam String label,
+                              @RequestParam(required = false) String relationship,
+                              @RequestParam(required = false) String name,
+                              @RequestParam(required = false) String email,
+                              @RequestParam(required = false) String phone,
+                              @RequestParam(required = false) String notes,
+                              RedirectAttributes redirectAttributes) {
+<span class="nc" id="L120">        apiClient.addContact(principal.getUserId(),</span>
+<span class="nc" id="L121">                blankToNull(label), blankToNull(relationship), blankToNull(name),</span>
+<span class="nc" id="L122">                blankToNull(email), blankToNull(phone), blankToNull(notes));</span>
+<span class="nc" id="L123">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Contact added&quot;);</span>
+<span class="nc" id="L124">        return &quot;redirect:/profile/contacts&quot;;</span>
+    }
+
+    @PostMapping(&quot;/contacts/{id}/update&quot;)
+    public String updateContact(@AuthenticationPrincipal CampusUserPrincipal principal,
+                                 @PathVariable Long id,
+                                 @RequestParam String label,
+                                 @RequestParam(required = false) String relationship,
+                                 @RequestParam(required = false) String name,
+                                 @RequestParam(required = false) String email,
+                                 @RequestParam(required = false) String phone,
+                                 @RequestParam(required = false) String notes,
+                                 RedirectAttributes redirectAttributes) {
+<span class="nc" id="L137">        apiClient.updateContact(principal.getUserId(), id,</span>
+<span class="nc" id="L138">                blankToNull(label), blankToNull(relationship), blankToNull(name),</span>
+<span class="nc" id="L139">                blankToNull(email), blankToNull(phone), blankToNull(notes));</span>
+<span class="nc" id="L140">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Contact updated&quot;);</span>
+<span class="nc" id="L141">        return &quot;redirect:/profile/contacts&quot;;</span>
+    }
+
+    @PostMapping(&quot;/contacts/{id}/delete&quot;)
+    public String deleteContact(@AuthenticationPrincipal CampusUserPrincipal principal,
+                                 @PathVariable Long id,
+                                 RedirectAttributes redirectAttributes) {
+<span class="nc" id="L148">        apiClient.deleteContact(principal.getUserId(), id);</span>
+<span class="nc" id="L149">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Contact deleted&quot;);</span>
+<span class="nc" id="L150">        return &quot;redirect:/profile/contacts&quot;;</span>
+    }
+
+    private static String blankToNull(String s) {
+<span class="nc bnc" id="L154" title="All 4 branches missed.">        return (s == null || s.isBlank()) ? null : s;</span>
+    }
+
+    @GetMapping(&quot;/tags&quot;)
+    public String tags(@AuthenticationPrincipal CampusUserPrincipal principal,
+                       Model model) {
+<span class="nc" id="L160">        model.addAttribute(&quot;currentPage&quot;, &quot;profile&quot;);</span>
+
+        // API returns List&lt;String&gt; of tag names directly.
+<span class="nc" id="L163">        List&lt;String&gt; tags = apiClient.getTags(principal.getUserId());</span>
+<span class="nc" id="L164">        model.addAttribute(&quot;tags&quot;, tags);</span>
+
+<span class="nc" id="L166">        return &quot;profile/tags&quot;;</span>
+    }
+
+    @GetMapping(&quot;/notifications&quot;)
+    public String notificationSettings(@AuthenticationPrincipal CampusUserPrincipal principal,
+                                        Model model) {
+<span class="nc" id="L172">        model.addAttribute(&quot;currentPage&quot;, &quot;profile&quot;);</span>
+
+<span class="nc" id="L174">        UserPreferenceEntity preferences =</span>
+<span class="nc" id="L175">                apiClient.getPreferences(principal.getUserId());</span>
+<span class="nc" id="L176">        model.addAttribute(&quot;preferences&quot;, preferences);</span>
+
+<span class="nc" id="L178">        List&lt;NotificationPreferenceEntity&gt; notificationPrefs =</span>
+<span class="nc" id="L179">                apiClient.getNotificationPreferences(principal.getUserId());</span>
+<span class="nc" id="L180">        model.addAttribute(&quot;notificationPrefs&quot;, notificationPrefs);</span>
+
+<span class="nc" id="L182">        return &quot;profile/notification-settings&quot;;</span>
+    }
+
+    @PostMapping(&quot;/addresses&quot;)
+    public String addAddress(@AuthenticationPrincipal CampusUserPrincipal principal,
+                             @RequestParam String label, @RequestParam String street,
+                             @RequestParam String city, @RequestParam String state,
+                             @RequestParam String zipCode,
+                             RedirectAttributes redirectAttributes) {
+<span class="nc" id="L191">        apiClient.addAddress(principal.getUserId(), label, street, city, state, zipCode);</span>
+<span class="nc" id="L192">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Address added successfully&quot;);</span>
+<span class="nc" id="L193">        return &quot;redirect:/profile/addresses&quot;;</span>
+    }
+
+    @PostMapping(&quot;/addresses/{id}/delete&quot;)
+    public String deleteAddress(@AuthenticationPrincipal CampusUserPrincipal principal,
+                                @PathVariable Long id, RedirectAttributes redirectAttributes) {
+<span class="nc" id="L199">        apiClient.deleteAddress(principal.getUserId(), id);</span>
+<span class="nc" id="L200">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Address deleted&quot;);</span>
+<span class="nc" id="L201">        return &quot;redirect:/profile/addresses&quot;;</span>
+    }
+
+    @PostMapping(&quot;/tags&quot;)
+    public String addTag(@AuthenticationPrincipal CampusUserPrincipal principal,
+                         @RequestParam String tag, RedirectAttributes redirectAttributes) {
+<span class="nc" id="L207">        apiClient.addTag(principal.getUserId(), tag);</span>
+<span class="nc" id="L208">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Tag added&quot;);</span>
+<span class="nc" id="L209">        return &quot;redirect:/profile/tags&quot;;</span>
+    }
+
+    @PostMapping(&quot;/tags/{tag}/delete&quot;)
+    public String removeTag(@AuthenticationPrincipal CampusUserPrincipal principal,
+                            @PathVariable String tag, RedirectAttributes redirectAttributes) {
+<span class="nc" id="L215">        apiClient.removeTag(principal.getUserId(), tag);</span>
+<span class="nc" id="L216">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Tag removed&quot;);</span>
+<span class="nc" id="L217">        return &quot;redirect:/profile/tags&quot;;</span>
+    }
+
+    @PostMapping(&quot;/update&quot;)
+    public String updateProfile(@AuthenticationPrincipal CampusUserPrincipal principal,
+                                @RequestParam(required = false) String displayName,
+                                @RequestParam(required = false) String email,
+                                @RequestParam(required = false) String phone,
+                                RedirectAttributes redirectAttributes) {
+<span class="nc" id="L226">        apiClient.updateProfile(principal.getUserId(), displayName, email, phone);</span>
+<span class="nc" id="L227">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Profile updated&quot;);</span>
+<span class="nc" id="L228">        return &quot;redirect:/profile&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

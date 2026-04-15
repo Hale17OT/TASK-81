@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CreateLocationRequest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.api.dto</a> &gt; <span class="el_source">CreateLocationRequest.java</span></div><h1>CreateLocationRequest.java</h1><pre class="source lang-java linenums">package com.campusstore.api.dto;
+
+import com.campusstore.core.domain.model.SecurityLevel;
+import com.campusstore.core.domain.model.TemperatureZone;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import java.math.BigDecimal;
+
+public class CreateLocationRequest {
+
+    @NotNull(message = &quot;Zone ID is required&quot;)
+    private Long zoneId;
+
+    @NotBlank(message = &quot;Name is required&quot;)
+    private String name;
+
+    private BigDecimal x;
+
+    private BigDecimal y;
+
+    private Integer level;
+
+    private TemperatureZone temperatureZone;
+
+    private SecurityLevel securityLevel;
+
+    @Min(value = 0, message = &quot;Capacity must be zero or positive&quot;)
+    private int capacity;
+
+<span class="fc" id="L32">    public CreateLocationRequest() {</span>
+<span class="fc" id="L33">    }</span>
+
+    public Long getZoneId() {
+<span class="fc" id="L36">        return zoneId;</span>
+    }
+
+    public void setZoneId(Long zoneId) {
+<span class="fc" id="L40">        this.zoneId = zoneId;</span>
+<span class="fc" id="L41">    }</span>
+
+    public String getName() {
+<span class="fc" id="L44">        return name;</span>
+    }
+
+    public void setName(String name) {
+<span class="fc" id="L48">        this.name = name;</span>
+<span class="fc" id="L49">    }</span>
+
+    public BigDecimal getX() {
+<span class="fc" id="L52">        return x;</span>
+    }
+
+    public void setX(BigDecimal x) {
+<span class="fc" id="L56">        this.x = x;</span>
+<span class="fc" id="L57">    }</span>
+
+    public BigDecimal getY() {
+<span class="fc" id="L60">        return y;</span>
+    }
+
+    public void setY(BigDecimal y) {
+<span class="fc" id="L64">        this.y = y;</span>
+<span class="fc" id="L65">    }</span>
+
+    public Integer getLevel() {
+<span class="fc" id="L68">        return level;</span>
+    }
+
+    public void setLevel(Integer level) {
+<span class="fc" id="L72">        this.level = level;</span>
+<span class="fc" id="L73">    }</span>
+
+    public TemperatureZone getTemperatureZone() {
+<span class="fc" id="L76">        return temperatureZone;</span>
+    }
+
+    public void setTemperatureZone(TemperatureZone temperatureZone) {
+<span class="fc" id="L80">        this.temperatureZone = temperatureZone;</span>
+<span class="fc" id="L81">    }</span>
+
+    public SecurityLevel getSecurityLevel() {
+<span class="fc" id="L84">        return securityLevel;</span>
+    }
+
+    public void setSecurityLevel(SecurityLevel securityLevel) {
+<span class="fc" id="L88">        this.securityLevel = securityLevel;</span>
+<span class="fc" id="L89">    }</span>
+
+    public int getCapacity() {
+<span class="fc" id="L92">        return capacity;</span>
+    }
+
+    public void setCapacity(int capacity) {
+<span class="fc" id="L96">        this.capacity = capacity;</span>
+<span class="fc" id="L97">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

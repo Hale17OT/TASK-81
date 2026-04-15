@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotificationWebController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.web.controller</a> &gt; <span class="el_source">NotificationWebController.java</span></div><h1>NotificationWebController.java</h1><pre class="source lang-java linenums">package com.campusstore.web.controller;
+
+import com.campusstore.api.dto.PagedResponse;
+import com.campusstore.infrastructure.persistence.entity.NotificationEntity;
+import com.campusstore.infrastructure.security.service.CampusUserPrincipal;
+import com.campusstore.web.client.InternalApiClient;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+@Controller
+public class NotificationWebController {
+
+    private final InternalApiClient apiClient;
+
+<span class="fc" id="L23">    public NotificationWebController(InternalApiClient apiClient) {</span>
+<span class="fc" id="L24">        this.apiClient = apiClient;</span>
+<span class="fc" id="L25">    }</span>
+
+    @PostMapping(&quot;/notifications/{id}/mark-read&quot;)
+    public String markRead(@AuthenticationPrincipal CampusUserPrincipal principal,
+                           @PathVariable Long id, RedirectAttributes redirectAttributes) {
+<span class="nc" id="L30">        apiClient.markRead(id, principal.getUserId());</span>
+<span class="nc" id="L31">        return &quot;redirect:/notifications&quot;;</span>
+    }
+
+    @PostMapping(&quot;/notifications/mark-all-read&quot;)
+    public String markAllRead(@AuthenticationPrincipal CampusUserPrincipal principal,
+                              RedirectAttributes redirectAttributes) {
+<span class="nc" id="L37">        apiClient.markAllRead(principal.getUserId());</span>
+<span class="nc" id="L38">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;All notifications marked as read&quot;);</span>
+<span class="nc" id="L39">        return &quot;redirect:/notifications&quot;;</span>
+    }
+
+    @GetMapping(&quot;/notifications&quot;)
+    public String notificationCenter(@AuthenticationPrincipal CampusUserPrincipal principal,
+                                      @RequestParam(value = &quot;page&quot;, defaultValue = &quot;0&quot;) int page,
+                                      @RequestParam(value = &quot;size&quot;, defaultValue = &quot;20&quot;) int size,
+                                      Model model) {
+<span class="nc" id="L47">        model.addAttribute(&quot;currentPage&quot;, &quot;notifications&quot;);</span>
+
+<span class="nc" id="L49">        PagedResponse&lt;NotificationEntity&gt; notifications =</span>
+<span class="nc" id="L50">                apiClient.listNotifications(principal.getUserId(), PageRequest.of(page, size));</span>
+<span class="nc" id="L51">        model.addAttribute(&quot;notifications&quot;, notifications);</span>
+
+<span class="nc" id="L53">        long unreadCount = apiClient.getUnreadCount(principal.getUserId());</span>
+<span class="nc" id="L54">        model.addAttribute(&quot;unreadCount&quot;, unreadCount);</span>
+
+<span class="nc" id="L56">        return &quot;notification/index&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InventoryService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.core.service</a> &gt; <span class="el_source">InventoryService.java</span></div><h1>InventoryService.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package com.campusstore.core.service;</span>
+
+import com.campusstore.core.domain.event.ConflictException;
+import com.campusstore.core.domain.event.ResourceNotFoundException;
+import com.campusstore.core.domain.model.ABCClassification;
+import com.campusstore.core.domain.model.ItemCondition;
+import com.campusstore.infrastructure.persistence.entity.InventoryItemEntity;
+import com.campusstore.infrastructure.persistence.repository.CategoryRepository;
+import com.campusstore.infrastructure.persistence.repository.DepartmentRepository;
+import com.campusstore.infrastructure.persistence.repository.InventoryItemRepository;
+import com.campusstore.infrastructure.persistence.repository.PickTaskRepository;
+import com.campusstore.infrastructure.persistence.repository.StorageLocationRepository;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+@Service
+@Transactional
+public class InventoryService {
+
+<span class="fc" id="L37">    private static final Logger log = LoggerFactory.getLogger(InventoryService.class);</span>
+
+    private final InventoryItemRepository inventoryItemRepository;
+    private final CategoryRepository categoryRepository;
+    private final DepartmentRepository departmentRepository;
+    private final StorageLocationRepository storageLocationRepository;
+    private final PickTaskRepository pickTaskRepository;
+    private final AuditService auditService;
+
+<span class="fc" id="L46">    public InventoryService(InventoryItemRepository inventoryItemRepository,</span>
+                            CategoryRepository categoryRepository,
+                            DepartmentRepository departmentRepository,
+                            StorageLocationRepository storageLocationRepository,
+                            PickTaskRepository pickTaskRepository,
+                            AuditService auditService) {
+<span class="fc" id="L52">        this.inventoryItemRepository = inventoryItemRepository;</span>
+<span class="fc" id="L53">        this.categoryRepository = categoryRepository;</span>
+<span class="fc" id="L54">        this.departmentRepository = departmentRepository;</span>
+<span class="fc" id="L55">        this.storageLocationRepository = storageLocationRepository;</span>
+<span class="fc" id="L56">        this.pickTaskRepository = pickTaskRepository;</span>
+<span class="fc" id="L57">        this.auditService = auditService;</span>
+<span class="fc" id="L58">    }</span>
+
+    @Transactional(readOnly = true)
+    public Page&lt;InventoryItemEntity&gt; listItems(Pageable pageable) {
+<span class="fc" id="L62">        return inventoryItemRepository.findByIsActiveTrue(pageable);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public InventoryItemEntity getItem(Long itemId) {
+<span class="fc" id="L67">        Objects.requireNonNull(itemId, &quot;Item ID must not be null&quot;);</span>
+<span class="fc" id="L68">        InventoryItemEntity item = inventoryItemRepository.findById(itemId)</span>
+<span class="pc" id="L69">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;InventoryItem&quot;, itemId));</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (!Boolean.TRUE.equals(item.getIsActive())) {</span>
+<span class="nc" id="L71">            throw new ResourceNotFoundException(&quot;InventoryItem&quot;, itemId);</span>
+        }
+<span class="fc" id="L73">        return item;</span>
+    }
+
+    public InventoryItemEntity createItem(String name, String description, String sku,
+                                           Long categoryId, Long departmentId, Long locationId,
+                                           BigDecimal priceUsd, Integer quantityTotal,
+                                           Boolean requiresApproval, Long createdByUserId,
+                                           ItemCondition condition, LocalDate expirationDate) {
+<span class="fc" id="L81">        Objects.requireNonNull(name, &quot;Item name must not be null&quot;);</span>
+<span class="fc" id="L82">        Objects.requireNonNull(sku, &quot;SKU must not be null&quot;);</span>
+
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (inventoryItemRepository.existsBySku(sku)) {</span>
+<span class="nc" id="L85">            throw new ConflictException(&quot;SKU already exists: &quot; + sku);</span>
+        }
+
+<span class="pc bpc" id="L88" title="2 of 4 branches missed.">        if (categoryId != null &amp;&amp; !categoryRepository.existsById(categoryId)) {</span>
+<span class="nc" id="L89">            throw new ResourceNotFoundException(&quot;Category&quot;, categoryId);</span>
+        }
+<span class="pc bpc" id="L91" title="2 of 4 branches missed.">        if (departmentId != null &amp;&amp; !departmentRepository.existsById(departmentId)) {</span>
+<span class="nc" id="L92">            throw new ResourceNotFoundException(&quot;Department&quot;, departmentId);</span>
+        }
+<span class="pc bpc" id="L94" title="1 of 4 branches missed.">        if (locationId != null &amp;&amp; !storageLocationRepository.existsById(locationId)) {</span>
+<span class="nc" id="L95">            throw new ResourceNotFoundException(&quot;StorageLocation&quot;, locationId);</span>
+        }
+
+<span class="fc" id="L98">        InventoryItemEntity item = new InventoryItemEntity();</span>
+<span class="fc" id="L99">        item.setName(name);</span>
+<span class="fc" id="L100">        item.setDescription(description);</span>
+<span class="fc" id="L101">        item.setSku(sku);</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">        if (categoryId != null) {</span>
+<span class="fc" id="L103">            item.setCategory(categoryRepository.findById(categoryId).orElse(null));</span>
+        }
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (departmentId != null) {</span>
+<span class="fc" id="L106">            item.setDepartment(departmentRepository.findById(departmentId).orElse(null));</span>
+        }
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        if (locationId != null) {</span>
+<span class="fc" id="L109">            item.setLocation(storageLocationRepository.findById(locationId).orElse(null));</span>
+        }
+<span class="fc" id="L111">        item.setPriceUsd(priceUsd);</span>
+<span class="fc" id="L112">        item.setItemCondition(condition);</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">        item.setQuantityTotal(quantityTotal != null ? quantityTotal : 0);</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        item.setQuantityAvailable(quantityTotal != null ? quantityTotal : 0);</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">        item.setRequiresApproval(requiresApproval != null ? requiresApproval : true);</span>
+<span class="fc" id="L116">        item.setAbcClassification(ABCClassification.C);</span>
+<span class="fc" id="L117">        item.setExpirationDate(expirationDate);</span>
+<span class="fc" id="L118">        item.setIsActive(true);</span>
+<span class="fc" id="L119">        item.setHeatScore(BigDecimal.ZERO);</span>
+<span class="fc" id="L120">        item.setPopularityScore(0);</span>
+<span class="fc" id="L121">        item.setCreatedAt(Instant.now());</span>
+<span class="fc" id="L122">        item.setUpdatedAt(Instant.now());</span>
+
+<span class="fc" id="L124">        InventoryItemEntity saved = inventoryItemRepository.save(item);</span>
+
+<span class="fc" id="L126">        auditService.log(createdByUserId, &quot;CREATE_ITEM&quot;, &quot;InventoryItem&quot;, saved.getId(),</span>
+<span class="fc" id="L127">                &quot;{\&quot;sku\&quot;:\&quot;&quot; + sku + &quot;\&quot;,\&quot;name\&quot;:\&quot;&quot; + name + &quot;\&quot;}&quot;);</span>
+<span class="fc" id="L128">        log.info(&quot;Inventory item created with id={}, sku={}&quot;, saved.getId(), sku);</span>
+<span class="fc" id="L129">        return saved;</span>
+    }
+
+    public InventoryItemEntity updateItem(Long itemId, String name, String description,
+                                           BigDecimal priceUsd, Integer quantityTotal,
+                                           Boolean requiresApproval, Long updatedByUserId) {
+<span class="fc" id="L135">        Objects.requireNonNull(itemId, &quot;Item ID must not be null&quot;);</span>
+
+<span class="fc" id="L137">        InventoryItemEntity item = inventoryItemRepository.findById(itemId)</span>
+<span class="pc" id="L138">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;InventoryItem&quot;, itemId));</span>
+
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">        if (name != null) {</span>
+<span class="fc" id="L141">            item.setName(name);</span>
+        }
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        if (description != null) {</span>
+<span class="fc" id="L144">            item.setDescription(description);</span>
+        }
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">        if (priceUsd != null) {</span>
+<span class="fc" id="L147">            item.setPriceUsd(priceUsd);</span>
+        }
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">        if (quantityTotal != null) {</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">            int diff = quantityTotal - (item.getQuantityTotal() != null ? item.getQuantityTotal() : 0);</span>
+<span class="fc" id="L151">            item.setQuantityTotal(quantityTotal);</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">            int currentAvailable = item.getQuantityAvailable() != null ? item.getQuantityAvailable() : 0;</span>
+<span class="fc" id="L153">            item.setQuantityAvailable(Math.max(0, currentAvailable + diff));</span>
+        }
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">        if (requiresApproval != null) {</span>
+<span class="nc" id="L156">            item.setRequiresApproval(requiresApproval);</span>
+        }
+<span class="fc" id="L158">        item.setUpdatedAt(Instant.now());</span>
+
+<span class="fc" id="L160">        InventoryItemEntity saved = inventoryItemRepository.save(item);</span>
+
+<span class="fc" id="L162">        auditService.log(updatedByUserId, &quot;UPDATE_ITEM&quot;, &quot;InventoryItem&quot;, itemId,</span>
+<span class="fc" id="L163">                &quot;{\&quot;updatedFields\&quot;:\&quot;item\&quot;}&quot;);</span>
+<span class="fc" id="L164">        log.info(&quot;Inventory item updated id={}&quot;, itemId);</span>
+<span class="fc" id="L165">        return saved;</span>
+    }
+
+    public void deactivateItem(Long itemId, Long deactivatedByUserId) {
+<span class="nc" id="L169">        Objects.requireNonNull(itemId, &quot;Item ID must not be null&quot;);</span>
+
+<span class="nc" id="L171">        InventoryItemEntity item = inventoryItemRepository.findById(itemId)</span>
+<span class="nc" id="L172">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;InventoryItem&quot;, itemId));</span>
+
+<span class="nc" id="L174">        item.setIsActive(false);</span>
+<span class="nc" id="L175">        item.setUpdatedAt(Instant.now());</span>
+<span class="nc" id="L176">        inventoryItemRepository.save(item);</span>
+
+<span class="nc" id="L178">        auditService.log(deactivatedByUserId, &quot;DEACTIVATE_ITEM&quot;, &quot;InventoryItem&quot;, itemId, &quot;{}&quot;);</span>
+<span class="nc" id="L179">        log.info(&quot;Inventory item deactivated id={}&quot;, itemId);</span>
+<span class="nc" id="L180">    }</span>
+
+    public void recalculateAbc() {
+<span class="nc" id="L183">        log.info(&quot;Starting ABC classification recalculation&quot;);</span>
+<span class="nc" id="L184">        Instant ninetyDaysAgo = Instant.now().minus(90, ChronoUnit.DAYS);</span>
+
+        // Query pick frequency per item location from last 90 days
+<span class="nc" id="L187">        List&lt;Object[]&gt; pickCounts = pickTaskRepository.countCompletedPicksByLocationSince(ninetyDaysAgo);</span>
+
+        // Map locationId -&gt; pick count
+<span class="nc" id="L190">        Map&lt;Long, Long&gt; locationPickMap = pickCounts.stream()</span>
+<span class="nc" id="L191">                .collect(Collectors.toMap(</span>
+<span class="nc" id="L192">                        row -&gt; (Long) row[0],</span>
+<span class="nc" id="L193">                        row -&gt; (Long) row[1]</span>
+                ));
+
+        // Get all active items and map their pick frequency
+<span class="nc" id="L197">        List&lt;InventoryItemEntity&gt; allItems = inventoryItemRepository.findByIsActiveTrue(Pageable.unpaged()).getContent();</span>
+
+        // Create list of item with pick counts
+<span class="nc" id="L200">        List&lt;ItemPickCount&gt; itemPicks = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        for (InventoryItemEntity item : allItems) {</span>
+<span class="nc" id="L202">            Long locationId = item.getLocationId();</span>
+<span class="nc bnc" id="L203" title="All 4 branches missed.">            long count = locationId != null &amp;&amp; locationPickMap.containsKey(locationId)</span>
+<span class="nc" id="L204">                    ? locationPickMap.get(locationId) : 0L;</span>
+<span class="nc" id="L205">            itemPicks.add(new ItemPickCount(item, count));</span>
+        }
+
+        // Sort by pick count descending
+<span class="nc" id="L209">        itemPicks.sort(Comparator.comparingLong(ItemPickCount::count).reversed());</span>
+
+<span class="nc" id="L211">        int totalItems = itemPicks.size();</span>
+<span class="nc" id="L212">        int topA = (int) Math.ceil(totalItems * 0.20);</span>
+<span class="nc" id="L213">        int topB = (int) Math.ceil(totalItems * 0.50); // top 20% + next 30% = top 50%</span>
+
+<span class="nc bnc" id="L215" title="All 2 branches missed.">        for (int i = 0; i &lt; totalItems; i++) {</span>
+<span class="nc" id="L216">            InventoryItemEntity item = itemPicks.get(i).item();</span>
+            ABCClassification classification;
+<span class="nc bnc" id="L218" title="All 2 branches missed.">            if (i &lt; topA) {</span>
+<span class="nc" id="L219">                classification = ABCClassification.A;</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">            } else if (i &lt; topB) {</span>
+<span class="nc" id="L221">                classification = ABCClassification.B;</span>
+<span class="nc" id="L222">            } else {</span>
+<span class="nc" id="L223">                classification = ABCClassification.C;</span>
+            }
+<span class="nc" id="L225">            item.setAbcClassification(classification);</span>
+<span class="nc" id="L226">            item.setUpdatedAt(Instant.now());</span>
+        }
+
+<span class="nc" id="L229">        inventoryItemRepository.saveAll(allItems);</span>
+<span class="nc" id="L230">        log.info(&quot;ABC classification recalculation completed for {} items&quot;, totalItems);</span>
+<span class="nc" id="L231">    }</span>
+
+    public void recalculateHeatScores() {
+<span class="nc" id="L234">        log.info(&quot;Starting heat score recalculation&quot;);</span>
+<span class="nc" id="L235">        Instant fourteenDaysAgo = Instant.now().minus(14, ChronoUnit.DAYS);</span>
+
+        // Query pick counts from last 14 days per location
+<span class="nc" id="L238">        List&lt;Object[]&gt; pickCounts = pickTaskRepository.countCompletedPicksByLocationSince(fourteenDaysAgo);</span>
+<span class="nc" id="L239">        Map&lt;Long, Long&gt; locationPickMap = pickCounts.stream()</span>
+<span class="nc" id="L240">                .collect(Collectors.toMap(</span>
+<span class="nc" id="L241">                        row -&gt; (Long) row[0],</span>
+<span class="nc" id="L242">                        row -&gt; (Long) row[1]</span>
+                ));
+
+<span class="nc" id="L245">        List&lt;InventoryItemEntity&gt; allItems = inventoryItemRepository.findByIsActiveTrue(Pageable.unpaged()).getContent();</span>
+
+        // Find max pick count for normalization
+<span class="nc" id="L248">        long maxCount = 0;</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">        for (InventoryItemEntity item : allItems) {</span>
+<span class="nc" id="L250">            Long locationId = item.getLocationId();</span>
+<span class="nc bnc" id="L251" title="All 4 branches missed.">            long count = locationId != null &amp;&amp; locationPickMap.containsKey(locationId)</span>
+<span class="nc" id="L252">                    ? locationPickMap.get(locationId) : 0L;</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">            if (count &gt; maxCount) {</span>
+<span class="nc" id="L254">                maxCount = count;</span>
+            }
+        }
+
+        // Normalize to 0-1 scale
+<span class="nc bnc" id="L259" title="All 2 branches missed.">        for (InventoryItemEntity item : allItems) {</span>
+<span class="nc" id="L260">            Long locationId = item.getLocationId();</span>
+<span class="nc bnc" id="L261" title="All 4 branches missed.">            long count = locationId != null &amp;&amp; locationPickMap.containsKey(locationId)</span>
+<span class="nc" id="L262">                    ? locationPickMap.get(locationId) : 0L;</span>
+
+            BigDecimal heatScore;
+<span class="nc bnc" id="L265" title="All 2 branches missed.">            if (maxCount == 0) {</span>
+<span class="nc" id="L266">                heatScore = BigDecimal.ZERO;</span>
+<span class="nc" id="L267">            } else {</span>
+<span class="nc" id="L268">                heatScore = BigDecimal.valueOf(count)</span>
+<span class="nc" id="L269">                        .divide(BigDecimal.valueOf(maxCount), 4, RoundingMode.HALF_UP);</span>
+            }
+<span class="nc" id="L271">            item.setHeatScore(heatScore);</span>
+<span class="nc" id="L272">            item.setUpdatedAt(Instant.now());</span>
+        }
+
+<span class="nc" id="L275">        inventoryItemRepository.saveAll(allItems);</span>
+<span class="nc" id="L276">        log.info(&quot;Heat score recalculation completed for {} items&quot;, allItems.size());</span>
+<span class="nc" id="L277">    }</span>
+
+    private record ItemPickCount(InventoryItemEntity item, long count) {}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserPreferenceController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.api.controller</a> &gt; <span class="el_source">UserPreferenceController.java</span></div><h1>UserPreferenceController.java</h1><pre class="source lang-java linenums">package com.campusstore.api.controller;
+
+import com.campusstore.api.dto.ApiResponse;
+import com.campusstore.api.dto.DndRequest;
+import com.campusstore.api.dto.PersonalizationRequest;
+import com.campusstore.core.service.ProfileService;
+import com.campusstore.infrastructure.persistence.entity.UserPreferenceEntity;
+import com.campusstore.infrastructure.security.service.CampusUserPrincipal;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping(&quot;/api/user/preferences&quot;)
+public class UserPreferenceController {
+
+    private final ProfileService profileService;
+
+<span class="fc" id="L24">    public UserPreferenceController(ProfileService profileService) {</span>
+<span class="fc" id="L25">        this.profileService = profileService;</span>
+<span class="fc" id="L26">    }</span>
+
+    @GetMapping
+    public ResponseEntity&lt;ApiResponse&lt;UserPreferenceEntity&gt;&gt; getPreferences(
+            @AuthenticationPrincipal CampusUserPrincipal principal) {
+<span class="fc" id="L31">        UserPreferenceEntity prefs = profileService.getPreferences(principal.getUserId());</span>
+<span class="fc" id="L32">        return ResponseEntity.ok(ApiResponse.success(prefs));</span>
+    }
+
+    @PutMapping(&quot;/dnd&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;Void&gt;&gt; setDnd(
+            @AuthenticationPrincipal CampusUserPrincipal principal,
+            @Valid @RequestBody DndRequest request) {
+<span class="fc" id="L39">        profileService.updateDnd(principal.getUserId(), request.getStartTime(), request.getEndTime());</span>
+<span class="fc" id="L40">        return ResponseEntity.ok(ApiResponse.success());</span>
+    }
+
+    @PutMapping(&quot;/personalization&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;Void&gt;&gt; togglePersonalization(
+            @AuthenticationPrincipal CampusUserPrincipal principal,
+            @Valid @RequestBody PersonalizationRequest request) {
+<span class="fc" id="L47">        profileService.togglePersonalization(principal.getUserId(), request.isEnabled());</span>
+<span class="fc" id="L48">        return ResponseEntity.ok(ApiResponse.success());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

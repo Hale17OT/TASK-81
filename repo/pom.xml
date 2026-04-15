@@ -173,7 +173,7 @@
                     <!-- JUnit 5 tag expressions; see properties above. -->
                     <groups>${test.tags.included}</groups>
                     <excludedGroups>${test.tags.excluded}</excludedGroups>
-                    <argLine>-Dfile.encoding=UTF-8</argLine>
+                    <argLine>${argLine} -Dfile.encoding=UTF-8</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -192,6 +192,14 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                        <configuration>
+                            <!--
+                              Write coverage report to coverage/ (tracked by git) so that
+                              CI-generated jacoco.xml is committed alongside source.
+                              target/ is gitignored; coverage/ is not.
+                            -->
+                            <outputDirectory>${project.basedir}/coverage</outputDirectory>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

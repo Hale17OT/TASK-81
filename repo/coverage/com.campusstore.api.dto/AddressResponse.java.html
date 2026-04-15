@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AddressResponse.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.api.dto</a> &gt; <span class="el_source">AddressResponse.java</span></div><h1>AddressResponse.java</h1><pre class="source lang-java linenums">package com.campusstore.api.dto;
+
+/**
+ * Owner-scoped address response. Address fields are decrypted server-side
+ * for the authenticated owner only.
+ */
+public class AddressResponse {
+
+    private Long id;
+    private String label;
+    private String street;
+    private String city;
+    private String state;
+    private String zipCode;
+    private Boolean isPrimary;
+
+<span class="fc" id="L17">    public AddressResponse() {}</span>
+
+<span class="fc" id="L19">    public Long getId() { return id; }</span>
+<span class="fc" id="L20">    public void setId(Long id) { this.id = id; }</span>
+<span class="fc" id="L21">    public String getLabel() { return label; }</span>
+<span class="fc" id="L22">    public void setLabel(String label) { this.label = label; }</span>
+<span class="fc" id="L23">    public String getStreet() { return street; }</span>
+<span class="fc" id="L24">    public void setStreet(String street) { this.street = street; }</span>
+<span class="fc" id="L25">    public String getCity() { return city; }</span>
+<span class="fc" id="L26">    public void setCity(String city) { this.city = city; }</span>
+<span class="fc" id="L27">    public String getState() { return state; }</span>
+<span class="fc" id="L28">    public void setState(String state) { this.state = state; }</span>
+<span class="fc" id="L29">    public String getZipCode() { return zipCode; }</span>
+<span class="fc" id="L30">    public void setZipCode(String zipCode) { this.zipCode = zipCode; }</span>
+<span class="fc" id="L31">    public Boolean getIsPrimary() { return isPrimary; }</span>
+<span class="fc" id="L32">    public void setIsPrimary(Boolean isPrimary) { this.isPrimary = isPrimary; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

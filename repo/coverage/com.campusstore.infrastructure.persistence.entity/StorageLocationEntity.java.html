@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StorageLocationEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.infrastructure.persistence.entity</a> &gt; <span class="el_source">StorageLocationEntity.java</span></div><h1>StorageLocationEntity.java</h1><pre class="source lang-java linenums">package com.campusstore.infrastructure.persistence.entity;
+
+import com.campusstore.core.domain.model.SecurityLevel;
+import com.campusstore.core.domain.model.TemperatureZone;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+
+@JsonIgnoreProperties({&quot;hibernateLazyInitializer&quot;, &quot;handler&quot;})
+@Entity
+@Table(name = &quot;storage_location&quot;)
+<span class="fc" id="L26">public class StorageLocationEntity {</span>
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = &quot;zone_id&quot;, insertable = false, updatable = false)
+    private Long zoneId;
+
+    @Column(name = &quot;name&quot;, nullable = false)
+    private String name;
+
+    @Column(name = &quot;x_coord&quot;)
+    private BigDecimal xCoord;
+
+    @Column(name = &quot;y_coord&quot;)
+    private BigDecimal yCoord;
+
+    @Column(name = &quot;level&quot;)
+    private Integer level;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = &quot;temperature_zone&quot;)
+    private TemperatureZone temperatureZone;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = &quot;security_level&quot;)
+    private SecurityLevel securityLevel;
+
+    @Column(name = &quot;capacity&quot;)
+    private Integer capacity;
+
+    @Column(name = &quot;current_occupancy&quot;)
+    private Integer currentOccupancy;
+
+    @Column(name = &quot;created_at&quot;)
+    private Instant createdAt;
+
+    @Column(name = &quot;updated_at&quot;)
+    private Instant updatedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;zone_id&quot;)
+    private ZoneEntity zone;
+
+    public Long getId() {
+<span class="fc" id="L72">        return id;</span>
+    }
+
+    public void setId(Long id) {
+<span class="fc" id="L76">        this.id = id;</span>
+<span class="fc" id="L77">    }</span>
+
+    public Long getZoneId() {
+<span class="fc" id="L80">        return zoneId;</span>
+    }
+
+    public void setZoneId(Long zoneId) {
+<span class="nc" id="L84">        this.zoneId = zoneId;</span>
+<span class="nc" id="L85">    }</span>
+
+    public String getName() {
+<span class="fc" id="L88">        return name;</span>
+    }
+
+    public void setName(String name) {
+<span class="fc" id="L92">        this.name = name;</span>
+<span class="fc" id="L93">    }</span>
+
+    public BigDecimal getXCoord() {
+<span class="fc" id="L96">        return xCoord;</span>
+    }
+
+    public void setXCoord(BigDecimal xCoord) {
+<span class="fc" id="L100">        this.xCoord = xCoord;</span>
+<span class="fc" id="L101">    }</span>
+
+    public BigDecimal getYCoord() {
+<span class="fc" id="L104">        return yCoord;</span>
+    }
+
+    public void setYCoord(BigDecimal yCoord) {
+<span class="fc" id="L108">        this.yCoord = yCoord;</span>
+<span class="fc" id="L109">    }</span>
+
+    public Integer getLevel() {
+<span class="fc" id="L112">        return level;</span>
+    }
+
+    public void setLevel(Integer level) {
+<span class="fc" id="L116">        this.level = level;</span>
+<span class="fc" id="L117">    }</span>
+
+    public TemperatureZone getTemperatureZone() {
+<span class="fc" id="L120">        return temperatureZone;</span>
+    }
+
+    public void setTemperatureZone(TemperatureZone temperatureZone) {
+<span class="fc" id="L124">        this.temperatureZone = temperatureZone;</span>
+<span class="fc" id="L125">    }</span>
+
+    public SecurityLevel getSecurityLevel() {
+<span class="fc" id="L128">        return securityLevel;</span>
+    }
+
+    public void setSecurityLevel(SecurityLevel securityLevel) {
+<span class="fc" id="L132">        this.securityLevel = securityLevel;</span>
+<span class="fc" id="L133">    }</span>
+
+    public Integer getCapacity() {
+<span class="fc" id="L136">        return capacity;</span>
+    }
+
+    public void setCapacity(Integer capacity) {
+<span class="fc" id="L140">        this.capacity = capacity;</span>
+<span class="fc" id="L141">    }</span>
+
+    public Integer getCurrentOccupancy() {
+<span class="fc" id="L144">        return currentOccupancy;</span>
+    }
+
+    public void setCurrentOccupancy(Integer currentOccupancy) {
+<span class="fc" id="L148">        this.currentOccupancy = currentOccupancy;</span>
+<span class="fc" id="L149">    }</span>
+
+    public Instant getCreatedAt() {
+<span class="fc" id="L152">        return createdAt;</span>
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+<span class="fc" id="L156">        this.createdAt = createdAt;</span>
+<span class="fc" id="L157">    }</span>
+
+    public Instant getUpdatedAt() {
+<span class="fc" id="L160">        return updatedAt;</span>
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+<span class="fc" id="L164">        this.updatedAt = updatedAt;</span>
+<span class="fc" id="L165">    }</span>
+
+    @JsonIgnore
+    public ZoneEntity getZone() {
+<span class="fc" id="L169">        return zone;</span>
+    }
+
+    public void setZone(ZoneEntity zone) {
+<span class="fc" id="L173">        this.zone = zone;</span>
+<span class="fc" id="L174">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CampusUserPrincipal.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.infrastructure.security.service</a> &gt; <span class="el_source">CampusUserPrincipal.java</span></div><h1>CampusUserPrincipal.java</h1><pre class="source lang-java linenums">package com.campusstore.infrastructure.security.service;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+
+import java.util.Collection;
+
+/**
+ * Extended UserDetails principal that carries additional user context
+ * needed for authorization decisions (departmentId, homeZoneId).
+ */
+public class CampusUserPrincipal extends User {
+
+    private final Long userId;
+    private final String displayName;
+    private final Long departmentId;
+    private final Long homeZoneId;
+    private final boolean passwordChangeRequired;
+
+    public CampusUserPrincipal(Long userId, String username, String password,
+                                String displayName, Long departmentId, Long homeZoneId,
+                                Collection&lt;? extends GrantedAuthority&gt; authorities) {
+<span class="fc" id="L23">        this(userId, username, password, displayName, departmentId, homeZoneId,</span>
+                false, authorities);
+<span class="fc" id="L25">    }</span>
+
+    public CampusUserPrincipal(Long userId, String username, String password,
+                                String displayName, Long departmentId, Long homeZoneId,
+                                boolean passwordChangeRequired,
+                                Collection&lt;? extends GrantedAuthority&gt; authorities) {
+<span class="fc" id="L31">        super(username, password, true, true, true, true, authorities);</span>
+<span class="fc" id="L32">        this.userId = userId;</span>
+<span class="fc" id="L33">        this.displayName = displayName;</span>
+<span class="fc" id="L34">        this.departmentId = departmentId;</span>
+<span class="fc" id="L35">        this.homeZoneId = homeZoneId;</span>
+<span class="fc" id="L36">        this.passwordChangeRequired = passwordChangeRequired;</span>
+<span class="fc" id="L37">    }</span>
+
+    @Override
+    public void eraseCredentials() {
+<span class="fc" id="L41">        super.eraseCredentials();</span>
+<span class="fc" id="L42">    }</span>
+
+    public Long getUserId() {
+<span class="fc" id="L45">        return userId;</span>
+    }
+
+    public String getDisplayName() {
+<span class="fc" id="L49">        return displayName;</span>
+    }
+
+    public Long getDepartmentId() {
+<span class="fc" id="L53">        return departmentId;</span>
+    }
+
+    public Long getHomeZoneId() {
+<span class="fc" id="L57">        return homeZoneId;</span>
+    }
+
+    public boolean isPasswordChangeRequired() {
+<span class="fc" id="L61">        return passwordChangeRequired;</span>
+    }
+
+    public boolean hasRole(String role) {
+<span class="nc" id="L65">        return getAuthorities().stream()</span>
+<span class="nc" id="L66">                .anyMatch(a -&gt; a.getAuthority().equals(&quot;ROLE_&quot; + role));</span>
+    }
+
+    public boolean isAdmin() {
+<span class="nc" id="L70">        return hasRole(&quot;ADMIN&quot;);</span>
+    }
+
+    public boolean isTeacher() {
+<span class="nc" id="L74">        return hasRole(&quot;TEACHER&quot;);</span>
+    }
+
+    public boolean isStudent() {
+<span class="nc" id="L78">        return hasRole(&quot;STUDENT&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

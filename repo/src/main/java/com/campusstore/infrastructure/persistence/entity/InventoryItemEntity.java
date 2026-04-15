@@ -3,6 +3,8 @@ package com.campusstore.infrastructure.persistence.entity;
 import com.campusstore.core.domain.model.ABCClassification;
 import com.campusstore.core.domain.model.ItemCondition;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -247,6 +249,7 @@ public class InventoryItemEntity {
         this.updatedAt = updatedAt;
     }
 
+    @JsonIgnore
     public CategoryEntity getCategory() {
         return category;
     }
@@ -255,6 +258,7 @@ public class InventoryItemEntity {
         this.category = category;
     }
 
+    @JsonIgnore
     public DepartmentEntity getDepartment() {
         return department;
     }
@@ -263,6 +267,7 @@ public class InventoryItemEntity {
         this.department = department;
     }
 
+    @JsonIgnore
     public StorageLocationEntity getLocation() {
         return location;
     }

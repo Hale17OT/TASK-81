@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SearchService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.core.service</a> &gt; <span class="el_source">SearchService.java</span></div><h1>SearchService.java</h1><pre class="source lang-java linenums">package com.campusstore.core.service;
+
+import com.campusstore.core.domain.event.ConflictException;
+import com.campusstore.core.domain.event.ResourceNotFoundException;
+import com.campusstore.core.domain.model.ItemCondition;
+import com.campusstore.infrastructure.persistence.entity.BrowsingHistoryEntity;
+import com.campusstore.infrastructure.persistence.entity.FavoriteEntity;
+import com.campusstore.infrastructure.persistence.entity.InventoryItemEntity;
+import com.campusstore.infrastructure.persistence.entity.SearchLogEntity;
+import com.campusstore.infrastructure.persistence.entity.StorageLocationEntity;
+import com.campusstore.infrastructure.persistence.entity.UserEntity;
+import com.campusstore.infrastructure.persistence.entity.UserPreferenceEntity;
+import com.campusstore.infrastructure.persistence.repository.BrowsingHistoryRepository;
+import com.campusstore.infrastructure.persistence.repository.FavoriteRepository;
+import com.campusstore.infrastructure.persistence.repository.InventoryItemRepository;
+import com.campusstore.infrastructure.persistence.repository.SearchLogRepository;
+import com.campusstore.infrastructure.persistence.repository.UserPreferenceRepository;
+import com.campusstore.infrastructure.persistence.repository.UserRepository;
+import com.campusstore.infrastructure.persistence.repository.ZoneDistanceRepository;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Service
+@Transactional
+public class SearchService {
+
+<span class="fc" id="L56">    private static final Logger log = LoggerFactory.getLogger(SearchService.class);</span>
+
+    private final InventoryItemRepository inventoryItemRepository;
+    private final SearchLogRepository searchLogRepository;
+    private final BrowsingHistoryRepository browsingHistoryRepository;
+    private final FavoriteRepository favoriteRepository;
+    private final ZoneDistanceRepository zoneDistanceRepository;
+    private final UserPreferenceRepository userPreferenceRepository;
+    private final UserRepository userRepository;
+    private final EntityManager entityManager;
+
+<span class="fc" id="L67">    public SearchService(InventoryItemRepository inventoryItemRepository,</span>
+                         SearchLogRepository searchLogRepository,
+                         BrowsingHistoryRepository browsingHistoryRepository,
+                         FavoriteRepository favoriteRepository,
+                         ZoneDistanceRepository zoneDistanceRepository,
+                         UserPreferenceRepository userPreferenceRepository,
+                         UserRepository userRepository,
+                         EntityManager entityManager) {
+<span class="fc" id="L75">        this.inventoryItemRepository = inventoryItemRepository;</span>
+<span class="fc" id="L76">        this.searchLogRepository = searchLogRepository;</span>
+<span class="fc" id="L77">        this.browsingHistoryRepository = browsingHistoryRepository;</span>
+<span class="fc" id="L78">        this.favoriteRepository = favoriteRepository;</span>
+<span class="fc" id="L79">        this.zoneDistanceRepository = zoneDistanceRepository;</span>
+<span class="fc" id="L80">        this.userPreferenceRepository = userPreferenceRepository;</span>
+<span class="fc" id="L81">        this.userRepository = userRepository;</span>
+<span class="fc" id="L82">        this.entityManager = entityManager;</span>
+<span class="fc" id="L83">    }</span>
+
+    public Page&lt;InventoryItemEntity&gt; search(String keyword, Long categoryId, Long departmentId,
+                                             Long userZoneId, String sortBy,
+                                             boolean personalizationEnabled, Long userId,
+                                             Pageable pageable) {
+<span class="fc" id="L89">        return search(keyword, categoryId, departmentId, userZoneId, sortBy,</span>
+<span class="fc" id="L90">                personalizationEnabled, userId, pageable, null, null, null, null);</span>
+    }
+
+    public Page&lt;InventoryItemEntity&gt; search(String keyword, Long categoryId, Long departmentId,
+                                             Long userZoneId, String sortBy,
+                                             boolean personalizationEnabled, Long userId,
+                                             Pageable pageable,
+                                             BigDecimal priceMin, BigDecimal priceMax,
+                                             ItemCondition condition, Long zoneId) {
+
+        // Enforce privacy toggle: if user has disabled personalization in preferences, override
+<span class="pc bpc" id="L101" title="3 of 4 branches missed.">        if (personalizationEnabled &amp;&amp; userId != null) {</span>
+<span class="nc" id="L102">            Optional&lt;UserPreferenceEntity&gt; prefOpt = userPreferenceRepository.findByUserId(userId);</span>
+<span class="nc bnc" id="L103" title="All 4 branches missed.">            if (prefOpt.isPresent() &amp;&amp; Boolean.FALSE.equals(prefOpt.get().getPersonalizationEnabled())) {</span>
+<span class="nc" id="L104">                personalizationEnabled = false;</span>
+<span class="nc" id="L105">                log.debug(&quot;Personalization disabled by user preference for user={}&quot;, userId);</span>
+            }
+        }
+
+<span class="fc" id="L109">        CriteriaBuilder cb = entityManager.getCriteriaBuilder();</span>
+
+        // Count query
+<span class="fc" id="L112">        CriteriaQuery&lt;Long&gt; countQuery = cb.createQuery(Long.class);</span>
+<span class="fc" id="L113">        Root&lt;InventoryItemEntity&gt; countRoot = countQuery.from(InventoryItemEntity.class);</span>
+<span class="fc" id="L114">        List&lt;Predicate&gt; countPredicates = buildPredicates(cb, countRoot, keyword, categoryId, departmentId,</span>
+<span class="fc" id="L115">                priceMin, priceMax, condition, zoneId);</span>
+<span class="fc" id="L116">        countQuery.select(cb.count(countRoot));</span>
+<span class="fc" id="L117">        countQuery.where(countPredicates.toArray(new Predicate[0]));</span>
+<span class="fc" id="L118">        long totalCount = entityManager.createQuery(countQuery).getSingleResult();</span>
+
+        // Data query
+<span class="fc" id="L121">        CriteriaQuery&lt;InventoryItemEntity&gt; dataQuery = cb.createQuery(InventoryItemEntity.class);</span>
+<span class="fc" id="L122">        Root&lt;InventoryItemEntity&gt; root = dataQuery.from(InventoryItemEntity.class);</span>
+<span class="fc" id="L123">        List&lt;Predicate&gt; predicates = buildPredicates(cb, root, keyword, categoryId, departmentId,</span>
+<span class="fc" id="L124">                priceMin, priceMax, condition, zoneId);</span>
+<span class="fc" id="L125">        dataQuery.where(predicates.toArray(new Predicate[0]));</span>
+
+        // Apply sorting
+<span class="pc bpc" id="L128" title="3 of 4 branches missed.">        if (sortBy != null &amp;&amp; !sortBy.isBlank()) {</span>
+<span class="pc bpc" id="L129" title="5 of 6 branches missed.">            switch (sortBy.toLowerCase()) {</span>
+<span class="nc" id="L130">                case &quot;newest&quot; -&gt; dataQuery.orderBy(cb.desc(root.get(&quot;createdAt&quot;)));</span>
+<span class="nc" id="L131">                case &quot;price_asc&quot; -&gt; dataQuery.orderBy(cb.asc(root.get(&quot;priceUsd&quot;)));</span>
+<span class="nc" id="L132">                case &quot;price_desc&quot; -&gt; dataQuery.orderBy(cb.desc(root.get(&quot;priceUsd&quot;)));</span>
+<span class="nc" id="L133">                case &quot;popularity&quot; -&gt; dataQuery.orderBy(cb.desc(root.get(&quot;popularityScore&quot;)));</span>
+                case &quot;distance&quot; -&gt; {} // distance sort requires global ordering — handled below
+<span class="nc" id="L135">                default -&gt; dataQuery.orderBy(cb.desc(root.get(&quot;createdAt&quot;)));</span>
+            }
+<span class="nc" id="L137">        } else {</span>
+<span class="fc" id="L138">            dataQuery.orderBy(cb.desc(root.get(&quot;createdAt&quot;)));</span>
+        }
+
+<span class="fc" id="L141">        TypedQuery&lt;InventoryItemEntity&gt; typedQuery = entityManager.createQuery(dataQuery);</span>
+
+        // Distance and personalization sorts both require GLOBAL ordering before pagination,
+        // so fetch the full result set in those cases. Plain sorts paginate in-query.
+<span class="pc bpc" id="L145" title="3 of 4 branches missed.">        boolean needsGlobalSort = (&quot;distance&quot;.equalsIgnoreCase(sortBy) &amp;&amp; userZoneId != null)</span>
+<span class="pc bpc" id="L146" title="3 of 4 branches missed.">                || (personalizationEnabled &amp;&amp; userId != null);</span>
+
+        List&lt;InventoryItemEntity&gt; items;
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">        if (needsGlobalSort) {</span>
+<span class="nc" id="L150">            items = new ArrayList&lt;&gt;(typedQuery.getResultList());</span>
+
+<span class="nc bnc" id="L152" title="All 4 branches missed.">            if (&quot;distance&quot;.equalsIgnoreCase(sortBy) &amp;&amp; userZoneId != null) {</span>
+<span class="nc" id="L153">                final Long homeZone = userZoneId;</span>
+<span class="nc" id="L154">                items.sort((a, b) -&gt; {</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">                    BigDecimal distA = getZoneDistance(homeZone, a.getLocationId() != null ? getZoneIdForLocation(a) : null);</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">                    BigDecimal distB = getZoneDistance(homeZone, b.getLocationId() != null ? getZoneIdForLocation(b) : null);</span>
+<span class="nc" id="L157">                    return distA.compareTo(distB);</span>
+                });
+            }
+
+            // Personalization: apply AFTER distance ordering (if both apply) so favorites,
+            // last-30 viewed items, and recently-browsed categories bubble within the
+            // globally-sorted set — still pre-pagination.
+<span class="nc bnc" id="L164" title="All 4 branches missed.">            if (personalizationEnabled &amp;&amp; userId != null) {</span>
+<span class="nc" id="L165">                Set&lt;Long&gt; favoriteItemIds = favoriteRepository.findByUserId(userId).stream()</span>
+<span class="nc" id="L166">                        .map(FavoriteEntity::getItemId)</span>
+<span class="nc" id="L167">                        .collect(Collectors.toSet());</span>
+
+<span class="nc" id="L169">                List&lt;Long&gt; recentCategoryIds = browsingHistoryRepository.findRecentCategoryIdsByUserId(userId);</span>
+<span class="nc" id="L170">                Set&lt;Long&gt; recentCategorySet = recentCategoryIds.stream().collect(Collectors.toSet());</span>
+
+                // Last-30 browsed items, ordered most-recent first. Build a recency-weighted
+                // repeat-interaction score so items the user viewed recently / often rank higher.
+<span class="nc" id="L174">                List&lt;Long&gt; recentItemIds = browsingHistoryRepository.findRecentItemIdsByUserId(userId);</span>
+<span class="nc" id="L175">                Map&lt;Long, Integer&gt; recentItemScore = computeRecentItemScore(recentItemIds);</span>
+
+<span class="nc" id="L177">                items.sort((a, b) -&gt; {</span>
+<span class="nc" id="L178">                    int scoreA = computePersonalizationScore(a, favoriteItemIds, recentCategorySet, recentItemScore);</span>
+<span class="nc" id="L179">                    int scoreB = computePersonalizationScore(b, favoriteItemIds, recentCategorySet, recentItemScore);</span>
+<span class="nc" id="L180">                    return Integer.compare(scoreB, scoreA); // higher score first</span>
+                });
+            }
+
+            // Manual pagination after global sort
+<span class="nc" id="L185">            int start = (int) pageable.getOffset();</span>
+<span class="nc" id="L186">            int end = Math.min(start + pageable.getPageSize(), items.size());</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">            items = (start &lt; items.size()) ? items.subList(start, end) : java.util.Collections.emptyList();</span>
+<span class="nc" id="L188">        } else {</span>
+            // Simple sorts: paginate in query
+<span class="fc" id="L190">            typedQuery.setFirstResult((int) pageable.getOffset());</span>
+<span class="fc" id="L191">            typedQuery.setMaxResults(pageable.getPageSize());</span>
+<span class="fc" id="L192">            items = new ArrayList&lt;&gt;(typedQuery.getResultList());</span>
+        }
+
+        // Log the search — schema enforces query_text NOT NULL, so normalize the keyword
+        // to an empty string when the caller omitted `q`. &quot;&quot; cleanly represents a
+        // filter-only search in the log without violating the constraint.
+<span class="fc" id="L198">        SearchLogEntity searchLog = new SearchLogEntity();</span>
+<span class="fc" id="L199">        searchLog.setUserId(userId);</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        searchLog.setQueryText(keyword != null ? keyword : &quot;&quot;);</span>
+<span class="fc" id="L201">        searchLog.setFiltersJson(buildFiltersJson(categoryId, departmentId, sortBy));</span>
+<span class="fc" id="L202">        searchLog.setResultCount(items.size());</span>
+<span class="fc" id="L203">        searchLog.setSearchedAt(Instant.now());</span>
+<span class="fc" id="L204">        searchLogRepository.save(searchLog);</span>
+
+<span class="fc" id="L206">        return new PageImpl&lt;&gt;(items, pageable, totalCount);</span>
+    }
+
+    private List&lt;Predicate&gt; buildPredicates(CriteriaBuilder cb, Root&lt;InventoryItemEntity&gt; root,
+                                             String keyword, Long categoryId, Long departmentId,
+                                             BigDecimal priceMin, BigDecimal priceMax,
+                                             ItemCondition condition, Long zoneId) {
+<span class="fc" id="L213">        List&lt;Predicate&gt; predicates = new ArrayList&lt;&gt;();</span>
+
+        // Only active items
+<span class="fc" id="L216">        predicates.add(cb.equal(root.get(&quot;isActive&quot;), true));</span>
+
+<span class="pc bpc" id="L218" title="1 of 4 branches missed.">        if (keyword != null &amp;&amp; !keyword.isBlank()) {</span>
+            // Tokenized keyword matching: split query into tokens and match each
+            // In MySQL production, the FULLTEXT index on (name, description) provides
+            // native tokenized matching via InventoryItemRepository.searchFulltext().
+            // The Criteria API path uses token-based LIKE matching as a fallback
+            // that works across all databases (including H2 in tests).
+<span class="fc" id="L224">            String[] tokens = keyword.trim().toLowerCase().split(&quot;\\s+&quot;);</span>
+<span class="fc" id="L225">            List&lt;Predicate&gt; tokenPredicates = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">            for (String token : tokens) {</span>
+<span class="fc" id="L227">                String sanitized = token.replaceAll(&quot;[^a-zA-Z0-9]&quot;, &quot;&quot;);</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">                if (!sanitized.isEmpty()) {</span>
+<span class="fc" id="L229">                    String pattern = &quot;%&quot; + sanitized + &quot;%&quot;;</span>
+<span class="fc" id="L230">                    Predicate nameLike = cb.like(cb.lower(root.get(&quot;name&quot;)), pattern);</span>
+<span class="fc" id="L231">                    Predicate descLike = cb.like(cb.lower(root.get(&quot;description&quot;)), pattern);</span>
+<span class="fc" id="L232">                    tokenPredicates.add(cb.or(nameLike, descLike));</span>
+                }
+            }
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">            if (!tokenPredicates.isEmpty()) {</span>
+                // All tokens must match (AND semantics)
+<span class="fc" id="L237">                predicates.add(cb.and(tokenPredicates.toArray(new Predicate[0])));</span>
+            }
+        }
+
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">        if (categoryId != null) {</span>
+<span class="nc" id="L242">            predicates.add(cb.equal(root.get(&quot;categoryId&quot;), categoryId));</span>
+        }
+
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">        if (departmentId != null) {</span>
+<span class="nc" id="L246">            predicates.add(cb.equal(root.get(&quot;departmentId&quot;), departmentId));</span>
+        }
+
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">        if (priceMin != null) {</span>
+<span class="nc" id="L250">            predicates.add(cb.greaterThanOrEqualTo(root.get(&quot;priceUsd&quot;), priceMin));</span>
+        }
+
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">        if (priceMax != null) {</span>
+<span class="nc" id="L254">            predicates.add(cb.lessThanOrEqualTo(root.get(&quot;priceUsd&quot;), priceMax));</span>
+        }
+
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">        if (condition != null) {</span>
+<span class="nc" id="L258">            predicates.add(cb.equal(root.get(&quot;itemCondition&quot;), condition));</span>
+        }
+
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">        if (zoneId != null) {</span>
+<span class="nc" id="L262">            Join&lt;InventoryItemEntity, StorageLocationEntity&gt; locationJoin = root.join(&quot;location&quot;, JoinType.INNER);</span>
+<span class="nc" id="L263">            predicates.add(cb.equal(locationJoin.get(&quot;zoneId&quot;), zoneId));</span>
+        }
+
+<span class="fc" id="L266">        return predicates;</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;Map&lt;String, Object&gt;&gt; getTrendingTerms() {
+<span class="fc" id="L271">        Instant since = Instant.now().minus(7, ChronoUnit.DAYS);</span>
+<span class="fc" id="L272">        List&lt;Object[]&gt; rawResults = searchLogRepository.findTrendingTerms(since);</span>
+<span class="fc" id="L273">        List&lt;Map&lt;String, Object&gt;&gt; trending = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">        for (Object[] row : rawResults) {</span>
+<span class="pc bpc" id="L275" title="1 of 2 branches missed.">            if (trending.size() &gt;= 10) break;</span>
+<span class="fc" id="L276">            Map&lt;String, Object&gt; entry = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L277">            entry.put(&quot;term&quot;, row[0]);</span>
+<span class="fc" id="L278">            entry.put(&quot;count&quot;, row[1]);</span>
+<span class="fc" id="L279">            trending.add(entry);</span>
+        }
+<span class="fc" id="L281">        return trending;</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Page&lt;SearchLogEntity&gt; getSearchHistory(Long userId, Pageable pageable) {
+<span class="fc" id="L286">        Objects.requireNonNull(userId, &quot;User ID must not be null&quot;);</span>
+<span class="fc" id="L287">        return searchLogRepository.findByUserIdOrderBySearchedAtDesc(userId, pageable);</span>
+    }
+
+    public void recordBrowse(Long userId, Long itemId) {
+<span class="fc" id="L291">        Objects.requireNonNull(userId, &quot;User ID must not be null&quot;);</span>
+<span class="fc" id="L292">        Objects.requireNonNull(itemId, &quot;Item ID must not be null&quot;);</span>
+
+<span class="fc" id="L294">        BrowsingHistoryEntity entry = new BrowsingHistoryEntity();</span>
+<span class="fc" id="L295">        entry.setUserId(userId);</span>
+<span class="fc" id="L296">        entry.setItemId(itemId);</span>
+<span class="fc" id="L297">        entry.setViewedAt(Instant.now());</span>
+<span class="fc" id="L298">        browsingHistoryRepository.save(entry);</span>
+
+        // Trim to last 30 entries per user
+<span class="fc" id="L301">        long count = browsingHistoryRepository.countByUserId(userId);</span>
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">        if (count &gt; 30) {</span>
+<span class="nc" id="L303">            Page&lt;BrowsingHistoryEntity&gt; allHistory = browsingHistoryRepository</span>
+<span class="nc" id="L304">                    .findByUserIdOrderByViewedAtDesc(userId, PageRequest.of(0, (int) count));</span>
+<span class="nc" id="L305">            List&lt;BrowsingHistoryEntity&gt; historyList = allHistory.getContent();</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">            if (historyList.size() &gt; 30) {</span>
+<span class="nc" id="L307">                List&lt;BrowsingHistoryEntity&gt; toDelete = historyList.subList(30, historyList.size());</span>
+<span class="nc" id="L308">                browsingHistoryRepository.deleteAll(toDelete);</span>
+            }
+        }
+
+<span class="fc" id="L312">        log.debug(&quot;Browsing history recorded for user={}, item={}&quot;, userId, itemId);</span>
+<span class="fc" id="L313">    }</span>
+
+    @Transactional(readOnly = true)
+    public List&lt;FavoriteEntity&gt; getFavorites(Long userId) {
+<span class="fc" id="L317">        Objects.requireNonNull(userId, &quot;User ID must not be null&quot;);</span>
+<span class="fc" id="L318">        return favoriteRepository.findByUserId(userId);</span>
+    }
+
+    public FavoriteEntity addFavorite(Long userId, Long itemId) {
+<span class="fc" id="L322">        Objects.requireNonNull(userId, &quot;User ID must not be null&quot;);</span>
+<span class="fc" id="L323">        Objects.requireNonNull(itemId, &quot;Item ID must not be null&quot;);</span>
+
+<span class="pc bpc" id="L325" title="1 of 2 branches missed.">        if (favoriteRepository.existsByUserIdAndItemId(userId, itemId)) {</span>
+<span class="nc" id="L326">            throw new ConflictException(&quot;Item is already a favorite&quot;);</span>
+        }
+
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">        if (!inventoryItemRepository.existsById(itemId)) {</span>
+<span class="nc" id="L330">            throw new ResourceNotFoundException(&quot;InventoryItem&quot;, itemId);</span>
+        }
+
+<span class="fc" id="L333">        FavoriteEntity favorite = new FavoriteEntity();</span>
+<span class="fc" id="L334">        favorite.setUserId(userId);</span>
+<span class="fc" id="L335">        favorite.setItemId(itemId);</span>
+<span class="fc" id="L336">        favorite.setCreatedAt(Instant.now());</span>
+<span class="fc" id="L337">        FavoriteEntity saved = favoriteRepository.save(favorite);</span>
+
+<span class="fc" id="L339">        log.info(&quot;Favorite added for user={}, item={}&quot;, userId, itemId);</span>
+<span class="fc" id="L340">        return saved;</span>
+    }
+
+    public void removeFavorite(Long userId, Long itemId) {
+<span class="fc" id="L344">        Objects.requireNonNull(userId, &quot;User ID must not be null&quot;);</span>
+<span class="fc" id="L345">        Objects.requireNonNull(itemId, &quot;Item ID must not be null&quot;);</span>
+
+<span class="pc bpc" id="L347" title="1 of 2 branches missed.">        if (!favoriteRepository.existsByUserIdAndItemId(userId, itemId)) {</span>
+<span class="nc" id="L348">            throw new ResourceNotFoundException(&quot;Favorite not found for user &quot; + userId + &quot; and item &quot; + itemId);</span>
+        }
+
+<span class="fc" id="L351">        favoriteRepository.deleteByUserIdAndItemId(userId, itemId);</span>
+<span class="fc" id="L352">        log.info(&quot;Favorite removed for user={}, item={}&quot;, userId, itemId);</span>
+<span class="fc" id="L353">    }</span>
+
+    private BigDecimal getZoneDistance(Long fromZoneId, Long toZoneId) {
+<span class="nc bnc" id="L356" title="All 4 branches missed.">        if (fromZoneId == null || toZoneId == null) {</span>
+<span class="nc" id="L357">            return BigDecimal.valueOf(Long.MAX_VALUE);</span>
+        }
+<span class="nc bnc" id="L359" title="All 2 branches missed.">        if (fromZoneId.equals(toZoneId)) {</span>
+<span class="nc" id="L360">            return BigDecimal.ZERO;</span>
+        }
+<span class="nc" id="L362">        return zoneDistanceRepository.findDistanceWeight(fromZoneId, toZoneId)</span>
+<span class="nc" id="L363">                .orElse(BigDecimal.valueOf(Long.MAX_VALUE));</span>
+    }
+
+    private Long getZoneIdForLocation(InventoryItemEntity item) {
+<span class="nc bnc" id="L367" title="All 2 branches missed.">        if (item.getLocation() != null) {</span>
+<span class="nc" id="L368">            return item.getLocation().getZoneId();</span>
+        }
+<span class="nc" id="L370">        return null;</span>
+    }
+
+    private int computePersonalizationScore(InventoryItemEntity item, Set&lt;Long&gt; favoriteItemIds,
+                                             Set&lt;Long&gt; recentCategoryIds) {
+<span class="nc" id="L375">        return computePersonalizationScore(item, favoriteItemIds, recentCategoryIds, java.util.Map.of());</span>
+    }
+
+    private int computePersonalizationScore(InventoryItemEntity item, Set&lt;Long&gt; favoriteItemIds,
+                                             Set&lt;Long&gt; recentCategoryIds,
+                                             Map&lt;Long, Integer&gt; recentItemScore) {
+<span class="nc" id="L381">        int score = 0;</span>
+<span class="nc bnc" id="L382" title="All 2 branches missed.">        if (favoriteItemIds.contains(item.getId())) {</span>
+<span class="nc" id="L383">            score += 10;</span>
+        }
+        // Direct last-30-items affinity: recency + repeat interactions.
+<span class="nc" id="L386">        Integer itemBoost = recentItemScore.get(item.getId());</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">        if (itemBoost != null) {</span>
+<span class="nc" id="L388">            score += itemBoost;</span>
+        }
+<span class="nc bnc" id="L390" title="All 4 branches missed.">        if (item.getCategoryId() != null &amp;&amp; recentCategoryIds.contains(item.getCategoryId())) {</span>
+<span class="nc" id="L391">            score += 5;</span>
+        }
+<span class="nc" id="L393">        return score;</span>
+    }
+
+    /**
+     * Convert an ordered last-30 browsed-item list (most recent first) into a
+     * recency-weighted repeat-interaction score. More recent views weigh more
+     * (linear decay from 30 → 1) and duplicate entries accumulate so repeated
+     * views bubble up over one-off views.
+     */
+    private Map&lt;Long, Integer&gt; computeRecentItemScore(List&lt;Long&gt; recentItemIdsMostRecentFirst) {
+<span class="nc" id="L403">        Map&lt;Long, Integer&gt; score = new java.util.HashMap&lt;&gt;();</span>
+<span class="nc" id="L404">        int n = recentItemIdsMostRecentFirst.size();</span>
+<span class="nc bnc" id="L405" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L406">            Long itemId = recentItemIdsMostRecentFirst.get(i);</span>
+<span class="nc bnc" id="L407" title="All 2 branches missed.">            if (itemId == null) continue;</span>
+<span class="nc" id="L408">            int weight = n - i; // 30 for most recent, 1 for oldest of the window</span>
+<span class="nc" id="L409">            score.merge(itemId, weight, Integer::sum);</span>
+        }
+<span class="nc" id="L411">        return score;</span>
+    }
+
+    private String buildFiltersJson(Long categoryId, Long departmentId, String sortBy) {
+<span class="fc" id="L415">        StringBuilder sb = new StringBuilder(&quot;{&quot;);</span>
+<span class="fc" id="L416">        boolean first = true;</span>
+<span class="pc bpc" id="L417" title="1 of 2 branches missed.">        if (categoryId != null) {</span>
+<span class="nc" id="L418">            sb.append(&quot;\&quot;categoryId\&quot;:&quot;).append(categoryId);</span>
+<span class="nc" id="L419">            first = false;</span>
+        }
+<span class="pc bpc" id="L421" title="1 of 2 branches missed.">        if (departmentId != null) {</span>
+<span class="nc bnc" id="L422" title="All 2 branches missed.">            if (!first) sb.append(&quot;,&quot;);</span>
+<span class="nc" id="L423">            sb.append(&quot;\&quot;departmentId\&quot;:&quot;).append(departmentId);</span>
+<span class="nc" id="L424">            first = false;</span>
+        }
+<span class="pc bpc" id="L426" title="1 of 2 branches missed.">        if (sortBy != null) {</span>
+<span class="nc bnc" id="L427" title="All 2 branches missed.">            if (!first) sb.append(&quot;,&quot;);</span>
+<span class="nc" id="L428">            String sanitizedSort = sortBy.replace(&quot;\\&quot;, &quot;\\\\&quot;).replace(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;);</span>
+<span class="nc" id="L429">            sb.append(&quot;\&quot;sortBy\&quot;:\&quot;&quot;).append(sanitizedSort).append(&quot;\&quot;&quot;);</span>
+        }
+<span class="fc" id="L431">        sb.append(&quot;}&quot;);</span>
+<span class="fc" id="L432">        return sb.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

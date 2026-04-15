@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ApiResponse.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.api.dto</a> &gt; <span class="el_source">ApiResponse.java</span></div><h1>ApiResponse.java</h1><pre class="source lang-java linenums">package com.campusstore.api.dto;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.time.Instant;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ApiResponse&lt;T&gt; {
+
+    private boolean success;
+    private T data;
+    private ApiError error;
+    private Instant timestamp;
+
+<span class="fc" id="L15">    private ApiResponse() {</span>
+<span class="fc" id="L16">        this.timestamp = Instant.now();</span>
+<span class="fc" id="L17">    }</span>
+
+    public static &lt;T&gt; ApiResponse&lt;T&gt; success(T data) {
+<span class="fc" id="L20">        ApiResponse&lt;T&gt; response = new ApiResponse&lt;&gt;();</span>
+<span class="fc" id="L21">        response.success = true;</span>
+<span class="fc" id="L22">        response.data = data;</span>
+<span class="fc" id="L23">        return response;</span>
+    }
+
+    public static &lt;T&gt; ApiResponse&lt;T&gt; success() {
+<span class="fc" id="L27">        ApiResponse&lt;T&gt; response = new ApiResponse&lt;&gt;();</span>
+<span class="fc" id="L28">        response.success = true;</span>
+<span class="fc" id="L29">        return response;</span>
+    }
+
+    public static &lt;T&gt; ApiResponse&lt;T&gt; error(String code, String message) {
+<span class="fc" id="L33">        ApiResponse&lt;T&gt; response = new ApiResponse&lt;&gt;();</span>
+<span class="fc" id="L34">        response.success = false;</span>
+<span class="fc" id="L35">        response.error = new ApiError(code, message, null);</span>
+<span class="fc" id="L36">        return response;</span>
+    }
+
+    public static &lt;T&gt; ApiResponse&lt;T&gt; error(String code, String message, java.util.List&lt;FieldError&gt; details) {
+<span class="fc" id="L40">        ApiResponse&lt;T&gt; response = new ApiResponse&lt;&gt;();</span>
+<span class="fc" id="L41">        response.success = false;</span>
+<span class="fc" id="L42">        response.error = new ApiError(code, message, details);</span>
+<span class="fc" id="L43">        return response;</span>
+    }
+
+    public boolean isSuccess() {
+<span class="fc" id="L47">        return success;</span>
+    }
+
+    public void setSuccess(boolean success) {
+<span class="nc" id="L51">        this.success = success;</span>
+<span class="nc" id="L52">    }</span>
+
+    public T getData() {
+<span class="fc" id="L55">        return data;</span>
+    }
+
+    public void setData(T data) {
+<span class="nc" id="L59">        this.data = data;</span>
+<span class="nc" id="L60">    }</span>
+
+    public ApiError getError() {
+<span class="fc" id="L63">        return error;</span>
+    }
+
+    public void setError(ApiError error) {
+<span class="nc" id="L67">        this.error = error;</span>
+<span class="nc" id="L68">    }</span>
+
+    public Instant getTimestamp() {
+<span class="fc" id="L71">        return timestamp;</span>
+    }
+
+    public void setTimestamp(Instant timestamp) {
+<span class="nc" id="L75">        this.timestamp = timestamp;</span>
+<span class="nc" id="L76">    }</span>
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class ApiError {
+        private String code;
+        private String message;
+        private java.util.List&lt;FieldError&gt; details;
+
+<span class="nc" id="L84">        public ApiError() {}</span>
+
+<span class="fc" id="L86">        public ApiError(String code, String message, java.util.List&lt;FieldError&gt; details) {</span>
+<span class="fc" id="L87">            this.code = code;</span>
+<span class="fc" id="L88">            this.message = message;</span>
+<span class="fc" id="L89">            this.details = details;</span>
+<span class="fc" id="L90">        }</span>
+
+<span class="fc" id="L92">        public String getCode() { return code; }</span>
+<span class="nc" id="L93">        public void setCode(String code) { this.code = code; }</span>
+<span class="fc" id="L94">        public String getMessage() { return message; }</span>
+<span class="nc" id="L95">        public void setMessage(String message) { this.message = message; }</span>
+<span class="fc" id="L96">        public java.util.List&lt;FieldError&gt; getDetails() { return details; }</span>
+<span class="nc" id="L97">        public void setDetails(java.util.List&lt;FieldError&gt; details) { this.details = details; }</span>
+    }
+
+    public static class FieldError {
+        private String field;
+        private String message;
+
+<span class="nc" id="L104">        public FieldError() {}</span>
+
+<span class="fc" id="L106">        public FieldError(String field, String message) {</span>
+<span class="fc" id="L107">            this.field = field;</span>
+<span class="fc" id="L108">            this.message = message;</span>
+<span class="fc" id="L109">        }</span>
+
+<span class="fc" id="L111">        public String getField() { return field; }</span>
+<span class="nc" id="L112">        public void setField(String field) { this.field = field; }</span>
+<span class="fc" id="L113">        public String getMessage() { return message; }</span>
+<span class="nc" id="L114">        public void setMessage(String message) { this.message = message; }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuditUseCase.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.core.port.inbound</a> &gt; <span class="el_source">AuditUseCase.java</span></div><h1>AuditUseCase.java</h1><pre class="source lang-java linenums">package com.campusstore.core.port.inbound;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+
+/**
+ * Inbound port for audit-logging and compliance operations.
+ */
+public interface AuditUseCase {
+
+    /**
+     * Log an audit event.
+     *
+     * @param action      the action performed (e.g. &quot;CREATE&quot;, &quot;UPDATE&quot;, &quot;DELETE&quot;)
+     * @param entityType  the entity type (e.g. &quot;USER&quot;, &quot;ITEM&quot;, &quot;REQUEST&quot;)
+     * @param entityId    the entity id
+     * @param detailsJson additional details as a JSON string
+     * @param actorUserId the id of the user who performed the action
+     * @param ipAddress   the IP address of the actor
+     */
+    void log(String action, String entityType, Long entityId, String detailsJson,
+             Long actorUserId, String ipAddress);
+
+    /**
+     * Query audit log entries with filters and pagination.
+     *
+     * @param query    the audit query filters
+     * @param pageable pagination information
+     * @return a page of audit entry views
+     */
+    Page&lt;AuditEntryView&gt; query(AuditQuery query, Pageable pageable);
+
+    /**
+     * Run retention cleanup to remove audit entries beyond the retention period.
+     */
+    void runRetentionCleanup();
+
+    /**
+     * Run user-deletion workflow (anonymize/purge user data per GDPR / policy).
+     */
+    void runUserDeletion();
+
+    // ── Query types ────────────────────────────────────────────────────
+
+<span class="nc" id="L48">    record AuditQuery(</span>
+            String action,
+            String entityType,
+            LocalDateTime from,
+            LocalDateTime to,
+            Long actorUserId
+    ) {
+    }
+
+    // ── View types ─────────────────────────────────────────────────────
+
+<span class="nc" id="L59">    record AuditEntryView(</span>
+            Long id,
+            String action,
+            String entityType,
+            Long entityId,
+            String detailsJson,
+            Long actorUserId,
+            String actorUsername,
+            String ipAddress,
+            Instant createdAt
+    ) {
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

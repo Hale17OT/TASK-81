@@ -214,6 +214,7 @@ public class UserEntity {
         this.updatedAt = updatedAt;
     }
 
+    @JsonIgnore
     public DepartmentEntity getDepartment() {
         return department;
     }
@@ -222,6 +223,7 @@ public class UserEntity {
         this.department = department;
     }
 
+    @JsonIgnore
     public ZoneEntity getHomeZone() {
         return homeZone;
     }

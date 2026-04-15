@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RateLimitFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.infrastructure.security.filter</a> &gt; <span class="el_source">RateLimitFilter.java</span></div><h1>RateLimitFilter.java</h1><pre class="source lang-java linenums">package com.campusstore.infrastructure.security.filter;
+
+import com.campusstore.infrastructure.security.service.CampusUserPrincipal;
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import io.github.bucket4j.Refill;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.HexFormat;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
+@Component
+public class RateLimitFilter extends OncePerRequestFilter {
+
+<span class="fc" id="L32">    private static final Logger log = LoggerFactory.getLogger(RateLimitFilter.class);</span>
+
+<span class="fc" id="L34">    private final ConcurrentHashMap&lt;String, Bucket&gt; buckets = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc" id="L35">    private final ConcurrentHashMap&lt;String, ViolationTracker&gt; violations = new ConcurrentHashMap&lt;&gt;();</span>
+    private final com.campusstore.core.service.RateLimitService rateLimitService;
+
+    @Value(&quot;${campusstore.rate-limit.anonymous-requests-per-minute:30}&quot;)
+    private int anonymousLimit;
+
+    @Value(&quot;${campusstore.rate-limit.authenticated-requests-per-minute:120}&quot;)
+    private int authenticatedLimit;
+
+    @Value(&quot;${campusstore.rate-limit.lockout-threshold:10}&quot;)
+    private int lockoutThreshold;
+
+    @Value(&quot;${campusstore.rate-limit.lockout-duration-minutes:5}&quot;)
+    private int baseLockoutMinutes;
+
+<span class="fc" id="L50">    public RateLimitFilter(com.campusstore.core.service.RateLimitService rateLimitService) {</span>
+<span class="fc" id="L51">        this.rateLimitService = rateLimitService;</span>
+<span class="fc" id="L52">    }</span>
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                     FilterChain filterChain) throws ServletException, IOException {
+        // Skip static resources. Actuator is intentionally NOT skipped — health and
+        // metrics endpoints are reachable anonymously and must be bounded by the same
+        // 30 req/min anonymous policy the rest of the surface uses.
+<span class="fc" id="L60">        String path = request.getRequestURI();</span>
+<span class="fc bfc" id="L61" title="All 6 branches covered.">        if (path.startsWith(&quot;/css/&quot;) || path.startsWith(&quot;/js/&quot;) || path.startsWith(&quot;/images/&quot;)) {</span>
+<span class="fc" id="L62">            filterChain.doFilter(request, response);</span>
+<span class="fc" id="L63">            return;</span>
+        }
+
+        // Skip internal loopback calls from the web layer's RestClient. A single page
+        // render fans out to several /api/** calls and they must not drain the user's
+        // bucket. The shared secret is generated at startup and known only to this JVM.
+<span class="fc" id="L69">        String loopback = request.getHeader(com.campusstore.web.client.RestClientConfig.LOOPBACK_HEADER);</span>
+<span class="pc bpc" id="L70" title="3 of 4 branches missed.">        if (loopback != null &amp;&amp; constantTimeEquals(loopback,</span>
+<span class="nc" id="L71">                com.campusstore.web.client.RestClientConfig.getLoopbackSecret())) {</span>
+<span class="nc" id="L72">            filterChain.doFilter(request, response);</span>
+<span class="nc" id="L73">            return;</span>
+        }
+
+<span class="fc" id="L76">        String identifier = resolveIdentifier(request);</span>
+<span class="fc" id="L77">        boolean authenticated = isAuthenticated();</span>
+
+        // Check lockout — first in-memory, then DB-backed (restart-resilient)
+<span class="fc" id="L80">        ViolationTracker tracker = violations.get(identifier);</span>
+<span class="fc bfc" id="L81" title="All 4 branches covered.">        boolean lockedOut = (tracker != null &amp;&amp; tracker.lockoutUntil != null</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">                &amp;&amp; tracker.lockoutUntil.isAfter(LocalDateTime.now()));</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (!lockedOut) {</span>
+<span class="fc" id="L84">            try { lockedOut = rateLimitService.isLockedOut(identifier); }</span>
+<span class="pc" id="L85">            catch (Exception e) { /* DB unavailable — rely on in-memory only */ }</span>
+        }
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (lockedOut) {</span>
+<span class="pc bpc" id="L88" title="2 of 4 branches missed.">            long retryAfterSeconds = (tracker != null &amp;&amp; tracker.lockoutUntil != null)</span>
+<span class="fc" id="L89">                    ? Duration.between(LocalDateTime.now(), tracker.lockoutUntil).getSeconds()</span>
+<span class="pc" id="L90">                    : 300; // default 5 min if only DB-locked</span>
+<span class="fc" id="L91">            log.warn(&quot;Rate limit lockout active for identifier: {}&quot;, identifier.substring(0, Math.min(8, identifier.length())) + &quot;...&quot;);</span>
+<span class="fc" id="L92">            response.setStatus(429);</span>
+<span class="fc" id="L93">            response.setHeader(&quot;Retry-After&quot;, String.valueOf(retryAfterSeconds));</span>
+<span class="fc" id="L94">            response.setContentType(&quot;application/json&quot;);</span>
+<span class="fc" id="L95">            response.getWriter().write(&quot;{\&quot;success\&quot;:false,\&quot;error\&quot;:{\&quot;code\&quot;:\&quot;RATE_LIMIT_EXCEEDED\&quot;,\&quot;message\&quot;:\&quot;Account temporarily locked. Retry after &quot; + retryAfterSeconds + &quot; seconds.\&quot;}}&quot;);</span>
+<span class="fc" id="L96">            return;</span>
+        }
+
+<span class="fc" id="L99">        Bucket bucket = getOrCreateBucket(identifier, authenticated);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        if (bucket.tryConsume(1)) {</span>
+<span class="fc" id="L101">            filterChain.doFilter(request, response);</span>
+        } else {
+<span class="fc" id="L103">            recordViolation(identifier);</span>
+<span class="fc" id="L104">            log.info(&quot;Rate limit exceeded for identifier: {}&quot;, identifier.substring(0, Math.min(8, identifier.length())) + &quot;...&quot;);</span>
+<span class="fc" id="L105">            response.setStatus(429);</span>
+<span class="fc" id="L106">            response.setHeader(&quot;Retry-After&quot;, &quot;60&quot;);</span>
+<span class="fc" id="L107">            response.setContentType(&quot;application/json&quot;);</span>
+<span class="fc" id="L108">            response.getWriter().write(&quot;{\&quot;success\&quot;:false,\&quot;error\&quot;:{\&quot;code\&quot;:\&quot;RATE_LIMIT_EXCEEDED\&quot;,\&quot;message\&quot;:\&quot;Too many requests. Please wait and try again.\&quot;}}&quot;);</span>
+        }
+<span class="fc" id="L110">    }</span>
+
+    private String resolveIdentifier(HttpServletRequest request) {
+<span class="fc" id="L113">        Authentication auth = SecurityContextHolder.getContext().getAuthentication();</span>
+<span class="pc bpc" id="L114" title="2 of 6 branches missed.">        if (auth != null &amp;&amp; auth.isAuthenticated() &amp;&amp; auth.getPrincipal() instanceof CampusUserPrincipal principal) {</span>
+<span class="fc" id="L115">            return &quot;user:&quot; + principal.getUserId();</span>
+        }
+        // Anonymous: hash IP + User-Agent to handle NAT/proxy environments
+<span class="fc" id="L118">        String ip = getClientIp(request);</span>
+<span class="fc" id="L119">        String userAgent = request.getHeader(&quot;User-Agent&quot;);</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (userAgent == null) userAgent = &quot;unknown&quot;;</span>
+<span class="fc" id="L121">        return sha256(ip + &quot;:&quot; + userAgent);</span>
+    }
+
+    private boolean isAuthenticated() {
+<span class="fc" id="L125">        Authentication auth = SecurityContextHolder.getContext().getAuthentication();</span>
+<span class="pc bpc" id="L126" title="2 of 6 branches missed.">        return auth != null &amp;&amp; auth.isAuthenticated() &amp;&amp; auth.getPrincipal() instanceof CampusUserPrincipal;</span>
+    }
+
+    private Bucket getOrCreateBucket(String key, boolean authenticated) {
+<span class="fc" id="L130">        return buckets.computeIfAbsent(key, k -&gt; {</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">            int limit = authenticated ? authenticatedLimit : anonymousLimit;</span>
+<span class="fc" id="L132">            Bandwidth bandwidth = Bandwidth.builder()</span>
+<span class="fc" id="L133">                    .capacity(limit)</span>
+<span class="fc" id="L134">                    .refillGreedy(limit, Duration.ofMinutes(1))</span>
+<span class="fc" id="L135">                    .build();</span>
+<span class="fc" id="L136">            return Bucket.builder().addLimit(bandwidth).build();</span>
+        });
+    }
+
+    private void recordViolation(String identifier) {
+        // In-memory tracking for fast path
+<span class="fc" id="L142">        ViolationTracker tracker = violations.computeIfAbsent(identifier, k -&gt; new ViolationTracker());</span>
+<span class="fc" id="L143">        int count = tracker.count.incrementAndGet();</span>
+
+        // Persist to DB for restart-resilient governance
+        try {
+<span class="fc bfc" id="L147" title="All 2 branches covered.">            String type = identifier.startsWith(&quot;user:&quot;) ? &quot;AUTHENTICATED&quot; : &quot;ANONYMOUS&quot;;</span>
+<span class="fc" id="L148">            rateLimitService.recordViolation(identifier, type);</span>
+<span class="nc" id="L149">        } catch (Exception e) {</span>
+<span class="nc" id="L150">            log.debug(&quot;Failed to persist rate limit violation to DB (non-critical): {}&quot;, e.getMessage());</span>
+<span class="fc" id="L151">        }</span>
+
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        if (count &gt;= lockoutThreshold) {</span>
+<span class="fc" id="L154">            int escalationLevel = count / lockoutThreshold;</span>
+<span class="pc bpc" id="L155" title="3 of 4 branches missed.">            int lockoutMinutes = switch (escalationLevel) {</span>
+<span class="fc" id="L156">                case 1 -&gt; baseLockoutMinutes;       // 5 min</span>
+<span class="nc" id="L157">                case 2 -&gt; baseLockoutMinutes * 2;    // 10 min</span>
+<span class="nc" id="L158">                case 3 -&gt; baseLockoutMinutes * 6;    // 30 min</span>
+<span class="pc" id="L159">                default -&gt; baseLockoutMinutes * 12;   // 60 min</span>
+            };
+<span class="fc" id="L161">            tracker.lockoutUntil = LocalDateTime.now().plusMinutes(lockoutMinutes);</span>
+            // Persist lockout to DB for restart resilience
+            try {
+<span class="fc" id="L164">                rateLimitService.setLockoutUntil(identifier,</span>
+<span class="fc" id="L165">                        java.time.Instant.now().plus(lockoutMinutes, java.time.temporal.ChronoUnit.MINUTES));</span>
+<span class="nc" id="L166">            } catch (Exception e) {</span>
+<span class="nc" id="L167">                log.debug(&quot;Failed to persist lockout to DB: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L168">            }</span>
+<span class="fc" id="L169">            log.warn(&quot;Escalating lockout for {}: {} minutes (violations: {})&quot;,</span>
+<span class="fc" id="L170">                    identifier.substring(0, Math.min(8, identifier.length())) + &quot;...&quot;, lockoutMinutes, count);</span>
+        }
+<span class="fc" id="L172">    }</span>
+
+    private String getClientIp(HttpServletRequest request) {
+<span class="fc" id="L175">        String xForwardedFor = request.getHeader(&quot;X-Forwarded-For&quot;);</span>
+<span class="pc bpc" id="L176" title="1 of 4 branches missed.">        if (xForwardedFor != null &amp;&amp; !xForwardedFor.isEmpty()) {</span>
+<span class="fc" id="L177">            return xForwardedFor.split(&quot;,&quot;)[0].trim();</span>
+        }
+<span class="fc" id="L179">        return request.getRemoteAddr();</span>
+    }
+
+    private String sha256(String input) {
+        try {
+<span class="fc" id="L184">            MessageDigest digest = MessageDigest.getInstance(&quot;SHA-256&quot;);</span>
+<span class="fc" id="L185">            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L186">            return HexFormat.of().formatHex(hash);</span>
+<span class="nc" id="L187">        } catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L188">            throw new RuntimeException(&quot;SHA-256 not available&quot;, e);</span>
+        }
+    }
+
+    /** Constant-time string comparison so the loopback secret isn't probeable via timing. */
+    private static boolean constantTimeEquals(String a, String b) {
+<span class="nc bnc" id="L194" title="All 4 branches missed.">        if (a == null || b == null) return false;</span>
+<span class="nc" id="L195">        byte[] ab = a.getBytes(StandardCharsets.UTF_8);</span>
+<span class="nc" id="L196">        byte[] bb = b.getBytes(StandardCharsets.UTF_8);</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">        if (ab.length != bb.length) return false;</span>
+<span class="nc" id="L198">        int result = 0;</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">        for (int i = 0; i &lt; ab.length; i++) {</span>
+<span class="nc" id="L200">            result |= ab[i] ^ bb[i];</span>
+        }
+<span class="nc bnc" id="L202" title="All 2 branches missed.">        return result == 0;</span>
+    }
+
+<span class="fc" id="L205">    private static class ViolationTracker {</span>
+<span class="fc" id="L206">        final AtomicInteger count = new AtomicInteger(0);</span>
+        volatile LocalDateTime lockoutUntil;
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

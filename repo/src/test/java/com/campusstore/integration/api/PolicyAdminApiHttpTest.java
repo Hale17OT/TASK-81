@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PolicyAdminApiHttpTest extends BaseHttpApiTest {
@@ -54,5 +55,17 @@ class PolicyAdminApiHttpTest extends BaseHttpApiTest {
                 null,
                 String.class);
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    }
+
+    @Test
+    void updatePolicy_asAdmin_isAccessible() {
+        HttpClient client = adminClient();
+        Map<String, Object> req = Map.of("retentionDays", 90);
+        ResponseEntity<Map> response = client.put(
+                "/api/admin/policies/search_log", req, Map.class);
+        assertEquals(HttpStatus.OK, response.getStatusCode(),
+                "Admin must be able to update a retention policy");
+        assertTrue((Boolean) response.getBody().get("success"),
+                "Update policy response must have success=true");
     }
 }

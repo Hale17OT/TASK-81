@@ -8,10 +8,12 @@ import com.campusstore.infrastructure.persistence.repository.UserRepository;
 import com.campusstore.infrastructure.security.encryption.AesEncryptionService;
 import com.campusstore.infrastructure.security.service.CampusUserPrincipal;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -53,26 +55,31 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> login(
             @Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-        );
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+            );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        HttpSession session = httpRequest.getSession(true);
-        session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+            HttpSession session = httpRequest.getSession(true);
+            session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
 
-        CampusUserPrincipal principal = (CampusUserPrincipal) authentication.getPrincipal();
-        List<String> roles = principal.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
+            CampusUserPrincipal principal = (CampusUserPrincipal) authentication.getPrincipal();
+            List<String> roles = principal.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .collect(Collectors.toList());
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("userId", principal.getUserId());
-        data.put("username", principal.getUsername());
-        data.put("displayName", principal.getDisplayName());
-        data.put("roles", roles);
+            Map<String, Object> data = new HashMap<>();
+            data.put("userId", principal.getUserId());
+            data.put("username", principal.getUsername());
+            data.put("displayName", principal.getDisplayName());
+            data.put("roles", roles);
 
-        return ResponseEntity.ok(ApiResponse.success(data));
+            return ResponseEntity.ok(ApiResponse.success(data));
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("INVALID_CREDENTIALS", "Invalid username or password"));
+        }
     }
 
     @PostMapping("/logout")

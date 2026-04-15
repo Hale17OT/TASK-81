@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -78,5 +79,66 @@ class AuthApiHttpTest extends BaseHttpApiTest {
         );
         ResponseEntity<Map> response = client.put("/api/auth/password", changeReq, Map.class);
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    // ── POST /api/auth/login ─────────────────────────────────────────
+
+    @Test
+    void login_validCredentials_isAccessible() {
+        // Use restTemplate directly to POST login (no prior session needed)
+        Map<String, String> loginReq = Map.of(
+                "username", "teststudent",
+                "password", "Student123!"
+        );
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        org.springframework.http.HttpEntity<Map<String, String>> entity =
+                new org.springframework.http.HttpEntity<>(loginReq, headers);
+        ResponseEntity<Map> response = restTemplate.postForEntity(
+                "/api/auth/login", entity, Map.class);
+        assertEquals(HttpStatus.OK, response.getStatusCode(),
+                "Valid credentials must return 200 OK");
+        assertTrue((Boolean) response.getBody().get("success"),
+                "Login response must have success=true");
+    }
+
+    @Test
+    void login_wrongCredentials_returnsError() {
+        Map<String, String> loginReq = Map.of(
+                "username", "teststudent",
+                "password", "WrongPassword!"
+        );
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        org.springframework.http.HttpEntity<Map<String, String>> entity =
+                new org.springframework.http.HttpEntity<>(loginReq, headers);
+        ResponseEntity<Map> response = restTemplate.postForEntity(
+                "/api/auth/login", entity, Map.class);
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode(),
+                "Wrong credentials must return 401 Unauthorized");
+    }
+
+    // ── POST /api/auth/logout ────────────────────────────────────────
+
+    @Test
+    void logout_authenticated_isAccessible() {
+        HttpClient client = studentClient();
+        ResponseEntity<Map> response = client.post(
+                "/api/auth/logout", null, Map.class);
+        assertEquals(HttpStatus.OK, response.getStatusCode(),
+                "Authenticated logout must return 200 OK");
+        assertTrue((Boolean) response.getBody().get("success"),
+                "Logout response must have success=true");
+    }
+
+    @Test
+    void logout_unauthenticated_returns401() {
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        org.springframework.http.HttpEntity<?> entity =
+                new org.springframework.http.HttpEntity<>(null, headers);
+        ResponseEntity<String> response = restTemplate.postForEntity(
+                "/api/auth/logout", entity, String.class);
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
     }
 }

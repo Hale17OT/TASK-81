@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AdminWebController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.web.controller</a> &gt; <span class="el_source">AdminWebController.java</span></div><h1>AdminWebController.java</h1><pre class="source lang-java linenums">package com.campusstore.web.controller;
+
+import com.campusstore.api.dto.PagedResponse;
+import com.campusstore.core.domain.model.Role;
+import com.campusstore.core.domain.model.SecurityLevel;
+import com.campusstore.core.domain.model.TemperatureZone;
+import com.campusstore.infrastructure.persistence.entity.AuditLogEntity;
+import com.campusstore.infrastructure.persistence.entity.CrawlerJobEntity;
+import com.campusstore.infrastructure.persistence.entity.EmailOutboxEntity;
+import com.campusstore.infrastructure.persistence.entity.InventoryItemEntity;
+import com.campusstore.infrastructure.persistence.entity.StorageLocationEntity;
+import com.campusstore.infrastructure.persistence.entity.UserEntity;
+import com.campusstore.infrastructure.security.service.CampusUserPrincipal;
+import com.campusstore.web.client.InternalApiClient;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+
+@Controller
+@RequestMapping(&quot;/admin&quot;)
+@PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+public class AdminWebController {
+
+    private final InternalApiClient apiClient;
+
+<span class="fc" id="L44">    public AdminWebController(InternalApiClient apiClient) {</span>
+<span class="fc" id="L45">        this.apiClient = apiClient;</span>
+<span class="fc" id="L46">    }</span>
+
+    // -- Inventory Management --
+
+    @GetMapping(&quot;/inventory&quot;)
+    public String inventoryList(@RequestParam(value = &quot;keyword&quot;, required = false) String keyword,
+                                @RequestParam(value = &quot;active&quot;, required = false) Boolean active,
+                                @RequestParam(value = &quot;page&quot;, defaultValue = &quot;0&quot;) int page,
+                                @RequestParam(value = &quot;size&quot;, defaultValue = &quot;20&quot;) int size,
+                                Model model) {
+<span class="nc" id="L56">        model.addAttribute(&quot;currentPage&quot;, &quot;inventory&quot;);</span>
+
+<span class="nc" id="L58">        PagedResponse&lt;InventoryItemEntity&gt; items = apiClient.listItems(PageRequest.of(page, size));</span>
+<span class="nc" id="L59">        model.addAttribute(&quot;items&quot;, items);</span>
+<span class="nc" id="L60">        model.addAttribute(&quot;keyword&quot;, keyword);</span>
+<span class="nc" id="L61">        model.addAttribute(&quot;activeFilter&quot;, active);</span>
+
+<span class="nc" id="L63">        return &quot;admin/inventory&quot;;</span>
+    }
+
+    @GetMapping(&quot;/inventory/new&quot;)
+    public String newItemForm(Model model) {
+<span class="nc" id="L68">        model.addAttribute(&quot;currentPage&quot;, &quot;inventory&quot;);</span>
+<span class="nc" id="L69">        model.addAttribute(&quot;editMode&quot;, false);</span>
+<span class="nc" id="L70">        model.addAttribute(&quot;categories&quot;, apiClient.listCategories());</span>
+<span class="nc" id="L71">        model.addAttribute(&quot;departments&quot;, apiClient.listDepartments());</span>
+<span class="nc" id="L72">        model.addAttribute(&quot;locations&quot;, apiClient.listLocations(PageRequest.of(0, 1000)).getContent());</span>
+<span class="nc" id="L73">        return &quot;admin/inventory-form&quot;;</span>
+    }
+
+    @GetMapping(&quot;/inventory/edit/{id}&quot;)
+    public String editItemForm(@PathVariable Long id, Model model) {
+<span class="nc" id="L78">        model.addAttribute(&quot;currentPage&quot;, &quot;inventory&quot;);</span>
+<span class="nc" id="L79">        model.addAttribute(&quot;editMode&quot;, true);</span>
+
+<span class="nc" id="L81">        InventoryItemEntity item = apiClient.getItem(id);</span>
+<span class="nc" id="L82">        model.addAttribute(&quot;item&quot;, item);</span>
+<span class="nc" id="L83">        model.addAttribute(&quot;categories&quot;, apiClient.listCategories());</span>
+<span class="nc" id="L84">        model.addAttribute(&quot;departments&quot;, apiClient.listDepartments());</span>
+<span class="nc" id="L85">        model.addAttribute(&quot;locations&quot;, apiClient.listLocations(PageRequest.of(0, 1000)).getContent());</span>
+
+<span class="nc" id="L87">        return &quot;admin/inventory-form&quot;;</span>
+    }
+
+    // -- User Management --
+
+    @GetMapping(&quot;/users&quot;)
+    public String userList(@RequestParam(value = &quot;page&quot;, defaultValue = &quot;0&quot;) int page,
+                           @RequestParam(value = &quot;size&quot;, defaultValue = &quot;20&quot;) int size,
+                           Model model) {
+<span class="nc" id="L96">        model.addAttribute(&quot;currentPage&quot;, &quot;users&quot;);</span>
+
+<span class="nc" id="L98">        PagedResponse&lt;UserEntity&gt; users = apiClient.listUsers(PageRequest.of(page, size));</span>
+<span class="nc" id="L99">        model.addAttribute(&quot;users&quot;, users);</span>
+
+<span class="nc" id="L101">        return &quot;admin/users&quot;;</span>
+    }
+
+    @GetMapping(&quot;/users/new&quot;)
+    public String newUserForm(Model model) {
+<span class="nc" id="L106">        model.addAttribute(&quot;currentPage&quot;, &quot;users&quot;);</span>
+<span class="nc" id="L107">        model.addAttribute(&quot;roles&quot;, Role.values());</span>
+<span class="nc" id="L108">        model.addAttribute(&quot;departments&quot;, apiClient.listDepartments());</span>
+<span class="nc" id="L109">        return &quot;admin/user-form&quot;;</span>
+    }
+
+    @GetMapping(&quot;/users/{id}&quot;)
+    public String editUserPage(@PathVariable Long id, Model model) {
+<span class="nc" id="L114">        model.addAttribute(&quot;currentPage&quot;, &quot;users&quot;);</span>
+<span class="nc" id="L115">        model.addAttribute(&quot;editMode&quot;, true);</span>
+<span class="nc" id="L116">        UserEntity user = apiClient.getUserById(id);</span>
+<span class="nc" id="L117">        model.addAttribute(&quot;user&quot;, user);</span>
+<span class="nc" id="L118">        model.addAttribute(&quot;roles&quot;, Role.values());</span>
+<span class="nc" id="L119">        model.addAttribute(&quot;departments&quot;, apiClient.listDepartments());</span>
+<span class="nc" id="L120">        return &quot;admin/user-form&quot;;</span>
+    }
+
+    @PostMapping(&quot;/inventory&quot;)
+    public String createItem(@AuthenticationPrincipal CampusUserPrincipal principal,
+                             @RequestParam String name, @RequestParam(required = false) String description,
+                             @RequestParam(required = false) String sku, @RequestParam Long categoryId,
+                             @RequestParam Long departmentId, @RequestParam(required = false) Long locationId,
+                             @RequestParam BigDecimal priceUsd,
+                             @RequestParam(required = false) String condition,
+                             @RequestParam(defaultValue = &quot;0&quot;) int quantityTotal,
+                             @RequestParam(defaultValue = &quot;false&quot;) boolean requiresApproval,
+                             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate expirationDate,
+                             RedirectAttributes redirectAttributes) {
+<span class="nc bnc" id="L134" title="All 2 branches missed.">        com.campusstore.core.domain.model.ItemCondition cond = condition != null</span>
+<span class="nc" id="L135">                ? com.campusstore.core.domain.model.ItemCondition.valueOf(condition)</span>
+<span class="nc" id="L136">                : com.campusstore.core.domain.model.ItemCondition.NEW;</span>
+<span class="nc" id="L137">        apiClient.createItem(name, description, sku, categoryId, departmentId, locationId,</span>
+<span class="nc" id="L138">                priceUsd, quantityTotal, requiresApproval, principal.getUserId(), cond, expirationDate);</span>
+<span class="nc" id="L139">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Item created successfully&quot;);</span>
+<span class="nc" id="L140">        return &quot;redirect:/admin/inventory&quot;;</span>
+    }
+
+    @PostMapping(&quot;/inventory/{id}&quot;)
+    public String updateItem(@AuthenticationPrincipal CampusUserPrincipal principal,
+                             @PathVariable Long id,
+                             @RequestParam String name, @RequestParam(required = false) String description,
+                             @RequestParam BigDecimal priceUsd,
+                             @RequestParam(defaultValue = &quot;0&quot;) Integer quantityTotal,
+                             @RequestParam(defaultValue = &quot;false&quot;) Boolean requiresApproval,
+                             RedirectAttributes redirectAttributes) {
+<span class="nc" id="L151">        apiClient.updateItem(id, name, description, priceUsd, quantityTotal,</span>
+<span class="nc" id="L152">                requiresApproval, principal.getUserId());</span>
+<span class="nc" id="L153">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Item updated successfully&quot;);</span>
+<span class="nc" id="L154">        return &quot;redirect:/admin/inventory&quot;;</span>
+    }
+
+    @PostMapping(&quot;/inventory/{id}/deactivate&quot;)
+    public String deactivateItem(@AuthenticationPrincipal CampusUserPrincipal principal,
+                                 @PathVariable Long id, RedirectAttributes redirectAttributes) {
+<span class="nc" id="L160">        apiClient.deactivateItem(id, principal.getUserId());</span>
+<span class="nc" id="L161">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Item deactivated&quot;);</span>
+<span class="nc" id="L162">        return &quot;redirect:/admin/inventory&quot;;</span>
+    }
+
+    @PostMapping(&quot;/users&quot;)
+    public String createUser(@AuthenticationPrincipal CampusUserPrincipal principal,
+                             @RequestParam String username, @RequestParam String password,
+                             @RequestParam String displayName, @RequestParam(required = false) String email,
+                             @RequestParam(required = false) String phone,
+                             @RequestParam(required = false) List&lt;String&gt; roles,
+                             @RequestParam(required = false) Long departmentId,
+                             RedirectAttributes redirectAttributes) {
+        // Create user with first role, then add additional roles
+<span class="nc bnc" id="L174" title="All 4 branches missed.">        Role firstRole = (roles != null &amp;&amp; !roles.isEmpty()) ? Role.valueOf(roles.get(0)) : Role.STUDENT;</span>
+<span class="nc" id="L175">        UserEntity created = apiClient.createUser(username, password, displayName, email, phone,</span>
+<span class="nc" id="L176">                firstRole, principal.getUserId());</span>
+
+        // Assign additional roles beyond the first
+<span class="nc bnc" id="L179" title="All 4 branches missed.">        if (roles != null &amp;&amp; roles.size() &gt; 1) {</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">            for (int i = 1; i &lt; roles.size(); i++) {</span>
+<span class="nc" id="L181">                apiClient.assignRole(created.getId(), Role.valueOf(roles.get(i)), principal.getUserId());</span>
+            }
+        }
+
+        // Set department if provided
+<span class="nc bnc" id="L186" title="All 2 branches missed.">        if (departmentId != null) {</span>
+<span class="nc" id="L187">            apiClient.updateUser(created.getId(), null, null, null, departmentId, principal.getUserId());</span>
+        }
+
+<span class="nc" id="L190">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;User created successfully&quot;);</span>
+<span class="nc" id="L191">        return &quot;redirect:/admin/users&quot;;</span>
+    }
+
+    @PostMapping(&quot;/users/{id}&quot;)
+    public String updateUser(@AuthenticationPrincipal CampusUserPrincipal principal,
+                             @PathVariable Long id,
+                             @RequestParam String displayName,
+                             @RequestParam(required = false) String email,
+                             @RequestParam(required = false) String phone,
+                             @RequestParam(required = false) Long departmentId,
+                             RedirectAttributes redirectAttributes) {
+<span class="nc" id="L202">        apiClient.updateUser(id, displayName, email, phone, departmentId, principal.getUserId());</span>
+<span class="nc" id="L203">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;User updated successfully&quot;);</span>
+<span class="nc" id="L204">        return &quot;redirect:/admin/users&quot;;</span>
+    }
+
+    @PostMapping(&quot;/email-outbox/export&quot;)
+    public ResponseEntity&lt;byte[]&gt; exportOutbox() {
+<span class="nc" id="L209">        byte[] zip = apiClient.exportOutbox();</span>
+<span class="nc" id="L210">        return ResponseEntity.ok()</span>
+<span class="nc" id="L211">                .header(&quot;Content-Disposition&quot;, &quot;attachment; filename=email-outbox.zip&quot;)</span>
+<span class="nc" id="L212">                .header(&quot;Content-Type&quot;, &quot;application/zip&quot;)</span>
+<span class="nc" id="L213">                .body(zip);</span>
+    }
+
+    // -- Warehouse Dashboard --
+
+    @GetMapping(&quot;/warehouse&quot;)
+    public String warehouseDashboard(@RequestParam(value = &quot;page&quot;, defaultValue = &quot;0&quot;) int page,
+                                      @RequestParam(value = &quot;size&quot;, defaultValue = &quot;20&quot;) int size,
+                                      Model model) {
+<span class="nc" id="L222">        model.addAttribute(&quot;currentPage&quot;, &quot;warehouse&quot;);</span>
+
+<span class="nc" id="L224">        PagedResponse&lt;StorageLocationEntity&gt; locations =</span>
+<span class="nc" id="L225">                apiClient.listLocations(PageRequest.of(page, size));</span>
+<span class="nc" id="L226">        model.addAttribute(&quot;locations&quot;, locations);</span>
+<span class="nc" id="L227">        model.addAttribute(&quot;temperatureZones&quot;, TemperatureZone.values());</span>
+<span class="nc" id="L228">        model.addAttribute(&quot;securityLevels&quot;, SecurityLevel.values());</span>
+
+        // Populate items for the putaway selector. Cap at 500 so the dropdown stays usable;
+        // larger catalogs should drive a search-style picker, but this unblocks the core flow.
+<span class="nc" id="L232">        PagedResponse&lt;InventoryItemEntity&gt; items = apiClient.listItems(PageRequest.of(0, 500));</span>
+<span class="nc" id="L233">        model.addAttribute(&quot;items&quot;, items.getContent());</span>
+
+<span class="nc" id="L235">        return &quot;warehouse/index&quot;;</span>
+    }
+
+    // -- Crawler Dashboard --
+
+    @GetMapping(&quot;/crawler&quot;)
+    public String crawlerDashboard(Model model) {
+<span class="nc" id="L242">        model.addAttribute(&quot;currentPage&quot;, &quot;crawler&quot;);</span>
+
+<span class="nc" id="L244">        List&lt;CrawlerJobEntity&gt; jobs = apiClient.listCrawlerJobs();</span>
+<span class="nc" id="L245">        model.addAttribute(&quot;jobs&quot;, jobs);</span>
+
+<span class="nc" id="L247">        return &quot;crawler/index&quot;;</span>
+    }
+
+    // -- Audit Log --
+
+    @GetMapping(&quot;/audit&quot;)
+    public String auditLog(@RequestParam(value = &quot;action&quot;, required = false) String action,
+                           @RequestParam(value = &quot;entityType&quot;, required = false) String entityType,
+                           @RequestParam(value = &quot;from&quot;, required = false)
+                           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+                           @RequestParam(value = &quot;to&quot;, required = false)
+                           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+                           @RequestParam(value = &quot;page&quot;, defaultValue = &quot;0&quot;) int page,
+                           @RequestParam(value = &quot;size&quot;, defaultValue = &quot;20&quot;) int size,
+                           Model model) {
+<span class="nc" id="L262">        model.addAttribute(&quot;currentPage&quot;, &quot;audit&quot;);</span>
+
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        Instant fromInstant = from != null ? from.toInstant(ZoneOffset.UTC) : null;</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">        Instant toInstant = to != null ? to.toInstant(ZoneOffset.UTC) : null;</span>
+
+<span class="nc" id="L267">        PagedResponse&lt;AuditLogEntity&gt; entries =</span>
+<span class="nc" id="L268">                apiClient.queryAudit(action, entityType, null, null, fromInstant, toInstant,</span>
+<span class="nc" id="L269">                        PageRequest.of(page, size));</span>
+<span class="nc" id="L270">        model.addAttribute(&quot;entries&quot;, entries);</span>
+<span class="nc" id="L271">        model.addAttribute(&quot;action&quot;, action);</span>
+<span class="nc" id="L272">        model.addAttribute(&quot;entityType&quot;, entityType);</span>
+<span class="nc" id="L273">        model.addAttribute(&quot;from&quot;, from);</span>
+<span class="nc" id="L274">        model.addAttribute(&quot;to&quot;, to);</span>
+
+<span class="nc" id="L276">        return &quot;admin/audit&quot;;</span>
+    }
+
+    // -- Governance Policies --
+    // Surfaces the data_retention_policy table so admins can view and edit retention
+    // windows from the UI. Required by the prompt's &quot;Administrators manage ... policies&quot;
+    // capability — previously only adjustable via direct SQL.
+
+    @GetMapping(&quot;/policies&quot;)
+    public String policies(Model model) {
+<span class="nc" id="L286">        model.addAttribute(&quot;currentPage&quot;, &quot;policies&quot;);</span>
+<span class="nc" id="L287">        model.addAttribute(&quot;policies&quot;, apiClient.listPolicies());</span>
+<span class="nc" id="L288">        return &quot;admin/policies&quot;;</span>
+    }
+
+    @PostMapping(&quot;/policies/{entityType}&quot;)
+    public String updatePolicy(@PathVariable String entityType,
+                                @RequestParam(&quot;retentionDays&quot;) int retentionDays,
+                                @RequestParam(value = &quot;description&quot;, required = false) String description,
+                                RedirectAttributes redirectAttributes) {
+<span class="nc" id="L296">        apiClient.updatePolicy(entityType, retentionDays, description);</span>
+<span class="nc" id="L297">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;,</span>
+<span class="nc" id="L298">                &quot;Policy updated for &quot; + entityType);</span>
+<span class="nc" id="L299">        return &quot;redirect:/admin/policies&quot;;</span>
+    }
+
+    // -- Email Outbox --
+
+    @GetMapping(&quot;/email-outbox&quot;)
+    public String emailOutbox(@RequestParam(value = &quot;status&quot;, required = false) String status,
+                              @RequestParam(value = &quot;page&quot;, defaultValue = &quot;0&quot;) int page,
+                              @RequestParam(value = &quot;size&quot;, defaultValue = &quot;20&quot;) int size,
+                              Model model) {
+<span class="nc" id="L309">        model.addAttribute(&quot;currentPage&quot;, &quot;email-outbox&quot;);</span>
+
+<span class="nc" id="L311">        PagedResponse&lt;EmailOutboxEntity&gt; emails = apiClient.listOutbox(PageRequest.of(page, size));</span>
+<span class="nc" id="L312">        model.addAttribute(&quot;emails&quot;, emails);</span>
+<span class="nc" id="L313">        model.addAttribute(&quot;statusFilter&quot;, status);</span>
+
+<span class="nc" id="L315">        return &quot;admin/email-outbox&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

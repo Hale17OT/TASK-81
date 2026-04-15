@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RequestWebController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.web.controller</a> &gt; <span class="el_source">RequestWebController.java</span></div><h1>RequestWebController.java</h1><pre class="source lang-java linenums">package com.campusstore.web.controller;
+
+import com.campusstore.api.dto.PagedResponse;
+import com.campusstore.infrastructure.persistence.entity.InventoryItemEntity;
+import com.campusstore.infrastructure.persistence.entity.ItemRequestEntity;
+import com.campusstore.infrastructure.security.service.CampusUserPrincipal;
+import com.campusstore.web.client.InternalApiClient;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+@Controller
+public class RequestWebController {
+
+    private final InternalApiClient apiClient;
+
+<span class="fc" id="L25">    public RequestWebController(InternalApiClient apiClient) {</span>
+<span class="fc" id="L26">        this.apiClient = apiClient;</span>
+<span class="fc" id="L27">    }</span>
+
+    @GetMapping(&quot;/requests/mine&quot;)
+    public String myRequests(@AuthenticationPrincipal CampusUserPrincipal principal,
+                             @RequestParam(value = &quot;page&quot;, defaultValue = &quot;0&quot;) int page,
+                             @RequestParam(value = &quot;size&quot;, defaultValue = &quot;10&quot;) int size,
+                             Model model) {
+<span class="nc" id="L34">        model.addAttribute(&quot;currentPage&quot;, &quot;requests&quot;);</span>
+
+<span class="nc" id="L36">        PagedResponse&lt;ItemRequestEntity&gt; requests =</span>
+<span class="nc" id="L37">                apiClient.listMyRequests(principal.getUserId(), PageRequest.of(page, size));</span>
+<span class="nc" id="L38">        model.addAttribute(&quot;requests&quot;, requests);</span>
+
+<span class="nc" id="L40">        return &quot;request/my-requests&quot;;</span>
+    }
+
+    @GetMapping(&quot;/requests/pending&quot;)
+    @PreAuthorize(&quot;hasAnyRole('TEACHER', 'ADMIN')&quot;)
+    public String pendingApprovals(@AuthenticationPrincipal CampusUserPrincipal principal,
+                                    @RequestParam(value = &quot;page&quot;, defaultValue = &quot;0&quot;) int page,
+                                    @RequestParam(value = &quot;size&quot;, defaultValue = &quot;10&quot;) int size,
+                                    Model model) {
+<span class="nc" id="L49">        model.addAttribute(&quot;currentPage&quot;, &quot;approvals&quot;);</span>
+
+<span class="nc" id="L51">        PagedResponse&lt;ItemRequestEntity&gt; requests =</span>
+<span class="nc" id="L52">                apiClient.listPendingApprovals(principal.getUserId(), PageRequest.of(page, size));</span>
+<span class="nc" id="L53">        model.addAttribute(&quot;requests&quot;, requests);</span>
+
+<span class="nc" id="L55">        return &quot;request/pending-approvals&quot;;</span>
+    }
+
+    @GetMapping(&quot;/requests/{id}&quot;)
+    public String requestDetail(@PathVariable Long id,
+                                @AuthenticationPrincipal CampusUserPrincipal principal,
+                                Model model) {
+<span class="nc" id="L62">        model.addAttribute(&quot;currentPage&quot;, &quot;requests&quot;);</span>
+
+<span class="nc" id="L64">        ItemRequestEntity request =</span>
+<span class="nc" id="L65">                apiClient.getRequest(id, principal.getUserId());</span>
+<span class="nc" id="L66">        model.addAttribute(&quot;request&quot;, request);</span>
+<span class="nc" id="L67">        model.addAttribute(&quot;isOwner&quot;, request.getRequesterId().equals(principal.getUserId()));</span>
+<span class="nc" id="L68">        model.addAttribute(&quot;isAdmin&quot;, principal.isAdmin());</span>
+<span class="nc" id="L69">        model.addAttribute(&quot;isTeacher&quot;, principal.isTeacher());</span>
+
+<span class="nc" id="L71">        return &quot;request/detail&quot;;</span>
+    }
+
+    @GetMapping(&quot;/requests/new/{itemId}&quot;)
+    public String newRequestForm(@PathVariable Long itemId,
+                                  @AuthenticationPrincipal CampusUserPrincipal principal,
+                                  Model model) {
+<span class="nc" id="L78">        model.addAttribute(&quot;currentPage&quot;, &quot;requests&quot;);</span>
+
+<span class="nc" id="L80">        InventoryItemEntity item = apiClient.getItem(itemId);</span>
+<span class="nc" id="L81">        model.addAttribute(&quot;item&quot;, item);</span>
+<span class="nc" id="L82">        model.addAttribute(&quot;userId&quot;, principal.getUserId());</span>
+
+<span class="nc" id="L84">        return &quot;request/new&quot;;</span>
+    }
+
+    @PostMapping(&quot;/requests/new&quot;)
+    public String createRequest(@AuthenticationPrincipal CampusUserPrincipal principal,
+                                @RequestParam Long itemId, @RequestParam(defaultValue = &quot;1&quot;) int quantity,
+                                @RequestParam(required = false) String justification,
+                                RedirectAttributes redirectAttributes) {
+<span class="nc" id="L92">        apiClient.createRequest(principal.getUserId(), itemId, quantity, justification);</span>
+<span class="nc" id="L93">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Request submitted successfully&quot;);</span>
+<span class="nc" id="L94">        return &quot;redirect:/requests/mine&quot;;</span>
+    }
+
+    @PostMapping(&quot;/requests/{id}/approve&quot;)
+    @PreAuthorize(&quot;hasAnyRole('TEACHER', 'ADMIN')&quot;)
+    public String approveRequest(@AuthenticationPrincipal CampusUserPrincipal principal,
+                                 @PathVariable Long id, RedirectAttributes redirectAttributes) {
+<span class="nc" id="L101">        apiClient.approveRequest(id, principal.getUserId());</span>
+<span class="nc" id="L102">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Request approved&quot;);</span>
+<span class="nc" id="L103">        return &quot;redirect:/requests/pending&quot;;</span>
+    }
+
+    @PostMapping(&quot;/requests/{id}/reject&quot;)
+    @PreAuthorize(&quot;hasAnyRole('TEACHER', 'ADMIN')&quot;)
+    public String rejectRequest(@AuthenticationPrincipal CampusUserPrincipal principal,
+                                @PathVariable Long id, @RequestParam String reason,
+                                RedirectAttributes redirectAttributes) {
+<span class="nc" id="L111">        apiClient.rejectRequest(id, principal.getUserId(), reason);</span>
+<span class="nc" id="L112">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Request rejected&quot;);</span>
+<span class="nc" id="L113">        return &quot;redirect:/requests/pending&quot;;</span>
+    }
+
+    @PostMapping(&quot;/requests/{id}/cancel&quot;)
+    public String cancelRequest(@AuthenticationPrincipal CampusUserPrincipal principal,
+                                @PathVariable Long id, RedirectAttributes redirectAttributes) {
+<span class="nc" id="L119">        apiClient.cancelRequest(id, principal.getUserId());</span>
+<span class="nc" id="L120">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Request cancelled&quot;);</span>
+<span class="nc" id="L121">        return &quot;redirect:/requests/mine&quot;;</span>
+    }
+
+    @PostMapping(&quot;/requests/{id}/picked-up&quot;)
+    @PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+    public String markPickedUp(@AuthenticationPrincipal CampusUserPrincipal principal,
+                               @PathVariable Long id, RedirectAttributes redirectAttributes) {
+<span class="nc" id="L128">        apiClient.markPickedUp(id, principal.getUserId());</span>
+<span class="nc" id="L129">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Marked as picked up&quot;);</span>
+<span class="nc" id="L130">        return &quot;redirect:/requests/&quot; + id;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

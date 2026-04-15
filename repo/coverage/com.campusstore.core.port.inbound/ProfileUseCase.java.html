@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProfileUseCase.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.core.port.inbound</a> &gt; <span class="el_source">ProfileUseCase.java</span></div><h1>ProfileUseCase.java</h1><pre class="source lang-java linenums">package com.campusstore.core.port.inbound;
+
+import org.springframework.data.domain.Page;
+
+import java.time.LocalTime;
+import java.util.List;
+
+/**
+ * Inbound port for user-profile and preference operations.
+ */
+public interface ProfileUseCase {
+
+    /**
+     * Retrieve a user's profile.
+     *
+     * @param userId the user id
+     * @return the profile view
+     */
+    ProfileView getProfile(Long userId);
+
+    /**
+     * Update a user's profile fields.
+     *
+     * @param userId  the user id
+     * @param command the fields to update
+     */
+    void updateProfile(Long userId, UpdateProfileCommand command);
+
+    // ── Addresses ──────────────────────────────────────────────────────
+
+    /**
+     * List all addresses for a user.
+     *
+     * @param userId the user id
+     * @return list of addresses
+     */
+    List&lt;AddressView&gt; getAddresses(Long userId);
+
+    /**
+     * Add a new address for a user.
+     *
+     * @param userId  the user id
+     * @param command the address details
+     * @return the id of the new address
+     */
+    Long addAddress(Long userId, AddAddressCommand command);
+
+    /**
+     * Update an existing address.
+     *
+     * @param userId    the user id
+     * @param addressId the address id
+     * @param command   the updated address details
+     */
+    void updateAddress(Long userId, Long addressId, AddAddressCommand command);
+
+    /**
+     * Delete an address.
+     *
+     * @param userId    the user id
+     * @param addressId the address id
+     */
+    void deleteAddress(Long userId, Long addressId);
+
+    // ── Tags ───────────────────────────────────────────────────────────
+
+    /**
+     * Get all tags for a user.
+     *
+     * @param userId the user id
+     * @return list of tag strings
+     */
+    List&lt;String&gt; getTags(Long userId);
+
+    /**
+     * Add a tag to a user.
+     *
+     * @param userId the user id
+     * @param tag    the tag value
+     */
+    void addTag(Long userId, String tag);
+
+    /**
+     * Remove a tag from a user.
+     *
+     * @param userId the user id
+     * @param tag    the tag value
+     */
+    void removeTag(Long userId, String tag);
+
+    // ── Preferences ────────────────────────────────────────────────────
+
+    /**
+     * Get a user's preferences.
+     *
+     * @param userId the user id
+     * @return the preferences view
+     */
+    PreferencesView getPreferences(Long userId);
+
+    /**
+     * Update do-not-disturb window.
+     *
+     * @param userId the user id
+     * @param start  DND start time
+     * @param end    DND end time
+     */
+    void updateDnd(Long userId, LocalTime start, LocalTime end);
+
+    /**
+     * Toggle search personalization for a user.
+     *
+     * @param userId  the user id
+     * @param enabled whether personalization is enabled
+     */
+    void togglePersonalization(Long userId, boolean enabled);
+
+    // ── Command types ──────────────────────────────────────────────────
+
+<span class="nc" id="L120">    record UpdateProfileCommand(</span>
+            String displayName,
+            String email,
+            String phone,
+            Long homeZoneId,
+            Long departmentId
+    ) {
+    }
+
+<span class="nc" id="L129">    record AddAddressCommand(</span>
+            String label,
+            String street,
+            String city,
+            String state,
+            String zipCode,
+            boolean primary
+    ) {
+    }
+
+    // ── View types ─────────────────────────────────────────────────────
+
+<span class="nc" id="L141">    record ProfileView(</span>
+            Long userId,
+            String username,
+            String displayName,
+            String email,
+            String phone,
+            Long homeZoneId,
+            Long departmentId,
+            boolean personalizationEnabled
+    ) {
+    }
+
+<span class="nc" id="L153">    record AddressView(</span>
+            Long id,
+            String label,
+            String street,
+            String city,
+            String state,
+            String zipCode,
+            boolean primary
+    ) {
+    }
+
+<span class="nc" id="L164">    record PreferencesView(</span>
+            LocalTime dndStart,
+            LocalTime dndEnd,
+            boolean personalizationEnabled
+    ) {
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

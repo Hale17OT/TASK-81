@@ -18,9 +18,8 @@ public interface SearchLogRepository extends JpaRepository<SearchLogEntity, Long
 
     Page<SearchLogEntity> findByUserIdOrderBySearchedAtDesc(Long userId, Pageable pageable);
 
-    @Query(value = "SELECT query_text, COUNT(*) AS cnt FROM search_log WHERE searched_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY query_text ORDER BY cnt DESC LIMIT :limit",
-           nativeQuery = true)
-    List<Object[]> findTrendingTerms(@Param("limit") int limit);
+    @Query("SELECT sl.queryText, COUNT(sl) FROM SearchLogEntity sl WHERE sl.searchedAt >= :since GROUP BY sl.queryText ORDER BY COUNT(sl) DESC")
+    List<Object[]> findTrendingTerms(@Param("since") Instant since);
 
     @Modifying
     @Transactional

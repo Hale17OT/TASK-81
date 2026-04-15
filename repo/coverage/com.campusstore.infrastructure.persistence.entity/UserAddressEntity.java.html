@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserAddressEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.infrastructure.persistence.entity</a> &gt; <span class="el_source">UserAddressEntity.java</span></div><h1>UserAddressEntity.java</h1><pre class="source lang-java linenums">package com.campusstore.infrastructure.persistence.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+import java.time.Instant;
+
+@Entity
+@Table(name = &quot;user_address&quot;)
+<span class="fc" id="L20">public class UserAddressEntity {</span>
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = &quot;user_id&quot;, insertable = false, updatable = false)
+    private Long userId;
+
+    @Column(name = &quot;label&quot;)
+    private String label;
+
+    @JsonIgnore
+    @Lob
+    @Column(name = &quot;street_encrypted&quot;)
+    private byte[] streetEncrypted;
+
+    @JsonIgnore
+    @Lob
+    @Column(name = &quot;city_encrypted&quot;)
+    private byte[] cityEncrypted;
+
+    @JsonIgnore
+    @Lob
+    @Column(name = &quot;state_encrypted&quot;)
+    private byte[] stateEncrypted;
+
+    @JsonIgnore
+    @Lob
+    @Column(name = &quot;zip_code_encrypted&quot;)
+    private byte[] zipCodeEncrypted;
+
+    @Column(name = &quot;is_primary&quot;)
+    private Boolean isPrimary;
+
+    @Column(name = &quot;created_at&quot;)
+    private Instant createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;user_id&quot;)
+    private UserEntity user;
+
+    public Long getId() {
+<span class="fc" id="L63">        return id;</span>
+    }
+
+    public void setId(Long id) {
+<span class="fc" id="L67">        this.id = id;</span>
+<span class="fc" id="L68">    }</span>
+
+    public Long getUserId() {
+<span class="fc" id="L71">        return userId;</span>
+    }
+
+    public void setUserId(Long userId) {
+<span class="fc" id="L75">        this.userId = userId;</span>
+<span class="fc" id="L76">    }</span>
+
+    public String getLabel() {
+<span class="fc" id="L79">        return label;</span>
+    }
+
+    public void setLabel(String label) {
+<span class="fc" id="L83">        this.label = label;</span>
+<span class="fc" id="L84">    }</span>
+
+    public byte[] getStreetEncrypted() {
+<span class="fc" id="L87">        return streetEncrypted;</span>
+    }
+
+    public void setStreetEncrypted(byte[] streetEncrypted) {
+<span class="fc" id="L91">        this.streetEncrypted = streetEncrypted;</span>
+<span class="fc" id="L92">    }</span>
+
+    public byte[] getCityEncrypted() {
+<span class="fc" id="L95">        return cityEncrypted;</span>
+    }
+
+    public void setCityEncrypted(byte[] cityEncrypted) {
+<span class="fc" id="L99">        this.cityEncrypted = cityEncrypted;</span>
+<span class="fc" id="L100">    }</span>
+
+    public byte[] getStateEncrypted() {
+<span class="fc" id="L103">        return stateEncrypted;</span>
+    }
+
+    public void setStateEncrypted(byte[] stateEncrypted) {
+<span class="fc" id="L107">        this.stateEncrypted = stateEncrypted;</span>
+<span class="fc" id="L108">    }</span>
+
+    public byte[] getZipCodeEncrypted() {
+<span class="fc" id="L111">        return zipCodeEncrypted;</span>
+    }
+
+    public void setZipCodeEncrypted(byte[] zipCodeEncrypted) {
+<span class="fc" id="L115">        this.zipCodeEncrypted = zipCodeEncrypted;</span>
+<span class="fc" id="L116">    }</span>
+
+    public Boolean getIsPrimary() {
+<span class="fc" id="L119">        return isPrimary;</span>
+    }
+
+    public void setIsPrimary(Boolean isPrimary) {
+<span class="fc" id="L123">        this.isPrimary = isPrimary;</span>
+<span class="fc" id="L124">    }</span>
+
+    public Instant getCreatedAt() {
+<span class="nc" id="L127">        return createdAt;</span>
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+<span class="fc" id="L131">        this.createdAt = createdAt;</span>
+<span class="fc" id="L132">    }</span>
+
+    public UserEntity getUser() {
+<span class="nc" id="L135">        return user;</span>
+    }
+
+    public void setUser(UserEntity user) {
+<span class="fc" id="L139">        this.user = user;</span>
+<span class="fc" id="L140">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

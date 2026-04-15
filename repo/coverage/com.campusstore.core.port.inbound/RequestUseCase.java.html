@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RequestUseCase.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.core.port.inbound</a> &gt; <span class="el_source">RequestUseCase.java</span></div><h1>RequestUseCase.java</h1><pre class="source lang-java linenums">package com.campusstore.core.port.inbound;
+
+import com.campusstore.core.domain.model.RequestStatus;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.time.Instant;
+
+/**
+ * Inbound port for item-request lifecycle operations.
+ */
+public interface RequestUseCase {
+
+    /**
+     * Create a new item request.
+     *
+     * @param requesterId   the requesting user's id
+     * @param itemId        the item id
+     * @param quantity      requested quantity
+     * @param justification reason for the request
+     * @return the id of the created request
+     */
+    Long createRequest(Long requesterId, Long itemId, int quantity, String justification);
+
+    /**
+     * Approve a pending request.
+     *
+     * @param requestId  the request id
+     * @param approverId the approving user's id
+     */
+    void approveRequest(Long requestId, Long approverId);
+
+    /**
+     * Reject a pending request.
+     *
+     * @param requestId  the request id
+     * @param approverId the rejecting user's id
+     * @param reason     the rejection reason
+     */
+    void rejectRequest(Long requestId, Long approverId, String reason);
+
+    /**
+     * Cancel a request (by the requester).
+     *
+     * @param requestId the request id
+     * @param userId    the user requesting cancellation
+     */
+    void cancelRequest(Long requestId, Long userId);
+
+    /**
+     * Mark a request as picked up.
+     *
+     * @param requestId the request id
+     * @param staffId   the staff member confirming pickup
+     */
+    void markPickedUp(Long requestId, Long staffId);
+
+    /**
+     * Get the details of a single request.
+     *
+     * @param requestId the request id
+     * @param viewerId  the user viewing the request (for access control)
+     * @return the request view
+     */
+    RequestView getRequest(Long requestId, Long viewerId);
+
+    /**
+     * List requests created by a specific user.
+     *
+     * @param userId   the requesting user's id
+     * @param pageable pagination information
+     * @return a page of request views
+     */
+    Page&lt;RequestView&gt; listMyRequests(Long userId, Pageable pageable);
+
+    /**
+     * List requests pending approval by a specific teacher.
+     *
+     * @param teacherId the teacher's user id
+     * @param pageable  pagination information
+     * @return a page of request views
+     */
+    Page&lt;RequestView&gt; listPendingApprovals(Long teacherId, Pageable pageable);
+
+    /**
+     * List all requests (admin view).
+     *
+     * @param pageable pagination information
+     * @return a page of request views
+     */
+    Page&lt;RequestView&gt; listAllRequests(Pageable pageable);
+
+    // ── View types ─────────────────────────────────────────────────────
+
+<span class="nc" id="L96">    record RequestView(</span>
+            Long id,
+            Long requesterId,
+            String requesterName,
+            Long itemId,
+            String itemName,
+            int quantity,
+            RequestStatus status,
+            String justification,
+            String rejectionReason,
+            Long approverId,
+            String approverName,
+            Instant approvedAt,
+            Instant pickedUpAt,
+            Instant pickupDeadline,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

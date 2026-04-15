@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserManagementService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.core.service</a> &gt; <span class="el_source">UserManagementService.java</span></div><h1>UserManagementService.java</h1><pre class="source lang-java linenums">package com.campusstore.core.service;
+
+import com.campusstore.core.domain.event.AccessDeniedException;
+import com.campusstore.core.domain.event.ConflictException;
+import com.campusstore.core.domain.event.ResourceNotFoundException;
+import com.campusstore.core.domain.model.AccountStatus;
+import com.campusstore.core.domain.model.Role;
+import com.campusstore.infrastructure.persistence.entity.DepartmentEntity;
+import com.campusstore.infrastructure.persistence.entity.UserEntity;
+import com.campusstore.infrastructure.persistence.entity.UserRoleEntity;
+import com.campusstore.infrastructure.persistence.repository.DepartmentRepository;
+import com.campusstore.infrastructure.persistence.repository.UserRepository;
+import com.campusstore.infrastructure.persistence.repository.UserRoleRepository;
+import com.campusstore.infrastructure.security.encryption.AesEncryptionService;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.Objects;
+
+@Service
+@Transactional
+public class UserManagementService {
+
+<span class="fc" id="L31">    private static final Logger log = LoggerFactory.getLogger(UserManagementService.class);</span>
+
+    private final UserRepository userRepository;
+    private final UserRoleRepository userRoleRepository;
+    private final DepartmentRepository departmentRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AesEncryptionService aesEncryptionService;
+    private final AuditService auditService;
+
+<span class="fc" id="L40">    public UserManagementService(UserRepository userRepository,</span>
+                                 UserRoleRepository userRoleRepository,
+                                 DepartmentRepository departmentRepository,
+                                 PasswordEncoder passwordEncoder,
+                                 AesEncryptionService aesEncryptionService,
+                                 AuditService auditService) {
+<span class="fc" id="L46">        this.userRepository = userRepository;</span>
+<span class="fc" id="L47">        this.userRoleRepository = userRoleRepository;</span>
+<span class="fc" id="L48">        this.departmentRepository = departmentRepository;</span>
+<span class="fc" id="L49">        this.passwordEncoder = passwordEncoder;</span>
+<span class="fc" id="L50">        this.aesEncryptionService = aesEncryptionService;</span>
+<span class="fc" id="L51">        this.auditService = auditService;</span>
+<span class="fc" id="L52">    }</span>
+
+    public UserEntity createUser(String username, String rawPassword, String displayName,
+                                 String email, String phone, Role initialRole, Long createdByUserId) {
+<span class="nc" id="L56">        return createUser(username, rawPassword, displayName, email, phone, initialRole, null, createdByUserId);</span>
+    }
+
+    public UserEntity createUser(String username, String rawPassword, String displayName,
+                                 String email, String phone, Role initialRole,
+                                 Long departmentId, Long createdByUserId) {
+<span class="fc" id="L62">        Objects.requireNonNull(username, &quot;Username must not be null&quot;);</span>
+<span class="fc" id="L63">        Objects.requireNonNull(rawPassword, &quot;Password must not be null&quot;);</span>
+
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        if (userRepository.existsByUsername(username)) {</span>
+<span class="nc" id="L66">            throw new ConflictException(&quot;Username already exists: &quot; + username);</span>
+        }
+
+<span class="fc" id="L69">        UserEntity user = new UserEntity();</span>
+<span class="fc" id="L70">        user.setUsername(username);</span>
+        // BCrypt encode, then AES encrypt the hash for at-rest protection
+<span class="fc" id="L72">        String bcryptHash = passwordEncoder.encode(rawPassword);</span>
+<span class="fc" id="L73">        user.setPasswordHashEncrypted(aesEncryptionService.encrypt(bcryptHash));</span>
+<span class="fc" id="L74">        user.setDisplayName(displayName);</span>
+<span class="fc" id="L75">        user.setEmailEncrypted(aesEncryptionService.encrypt(email));</span>
+<span class="fc" id="L76">        user.setPhoneEncrypted(aesEncryptionService.encrypt(phone));</span>
+<span class="fc" id="L77">        user.setPhoneLast4(AesEncryptionService.extractLast4(phone));</span>
+<span class="fc" id="L78">        user.setAccountStatus(AccountStatus.ACTIVE);</span>
+<span class="fc" id="L79">        user.setPersonalizationEnabled(true);</span>
+<span class="fc" id="L80">        user.setCreatedAt(Instant.now());</span>
+<span class="fc" id="L81">        user.setUpdatedAt(Instant.now());</span>
+
+        // Department FK is mapped via the `department` relationship. The scalar
+        // `department_id` column is insertable=false/updatable=false, so writing
+        // through `setDepartment(...)` is the only path that persists.
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        if (departmentId != null) {</span>
+<span class="fc" id="L87">            DepartmentEntity dept = departmentRepository.findById(departmentId)</span>
+<span class="pc" id="L88">                    .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Department&quot;, departmentId));</span>
+<span class="fc" id="L89">            user.setDepartment(dept);</span>
+        }
+
+<span class="fc" id="L92">        UserEntity saved = userRepository.save(user);</span>
+
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (initialRole != null) {</span>
+<span class="fc" id="L95">            UserRoleEntity roleEntity = new UserRoleEntity();</span>
+<span class="fc" id="L96">            roleEntity.setUser(saved);</span>
+<span class="fc" id="L97">            roleEntity.setRole(initialRole);</span>
+<span class="fc" id="L98">            roleEntity.setGrantedAt(Instant.now());</span>
+<span class="fc" id="L99">            roleEntity.setGrantedBy(createdByUserId);</span>
+<span class="fc" id="L100">            userRoleRepository.save(roleEntity);</span>
+        }
+
+<span class="fc" id="L103">        auditService.log(createdByUserId, &quot;CREATE_USER&quot;, &quot;User&quot;, saved.getId(),</span>
+<span class="fc" id="L104">                &quot;{\&quot;username\&quot;:\&quot;&quot; + username + &quot;\&quot;}&quot;);</span>
+<span class="fc" id="L105">        log.info(&quot;User created with id={}&quot;, saved.getId());</span>
+<span class="fc" id="L106">        return saved;</span>
+    }
+
+    public UserEntity updateUser(Long userId, String displayName, String email, String phone,
+                                  Long departmentId, Long updatedByUserId) {
+<span class="fc" id="L111">        Objects.requireNonNull(userId, &quot;User ID must not be null&quot;);</span>
+
+<span class="fc" id="L113">        UserEntity user = userRepository.findById(userId)</span>
+<span class="pc" id="L114">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;User&quot;, userId));</span>
+
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        if (displayName != null) {</span>
+<span class="fc" id="L117">            user.setDisplayName(displayName);</span>
+        }
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        if (email != null) {</span>
+<span class="fc" id="L120">            user.setEmailEncrypted(aesEncryptionService.encrypt(email));</span>
+        }
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">        if (phone != null) {</span>
+<span class="nc" id="L123">            user.setPhoneEncrypted(aesEncryptionService.encrypt(phone));</span>
+<span class="nc" id="L124">            user.setPhoneLast4(AesEncryptionService.extractLast4(phone));</span>
+        }
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        if (departmentId != null) {</span>
+<span class="fc" id="L127">            DepartmentEntity dept = departmentRepository.findById(departmentId)</span>
+<span class="pc" id="L128">                    .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Department&quot;, departmentId));</span>
+            // Write through the @ManyToOne relationship — the scalar `department_id`
+            // column is insertable/updatable=false and cannot persist on its own.
+<span class="fc" id="L131">            user.setDepartment(dept);</span>
+        }
+<span class="fc" id="L133">        user.setUpdatedAt(Instant.now());</span>
+
+<span class="fc" id="L135">        UserEntity saved = userRepository.save(user);</span>
+
+<span class="fc" id="L137">        auditService.log(updatedByUserId, &quot;UPDATE_USER&quot;, &quot;User&quot;, userId,</span>
+<span class="fc" id="L138">                &quot;{\&quot;updatedFields\&quot;:\&quot;profile,department\&quot;}&quot;);</span>
+<span class="fc" id="L139">        log.info(&quot;User updated id={}&quot;, userId);</span>
+<span class="fc" id="L140">        return saved;</span>
+    }
+
+    @Transactional(readOnly = true)
+    public UserEntity getUserById(Long userId) {
+<span class="fc" id="L145">        Objects.requireNonNull(userId, &quot;User ID must not be null&quot;);</span>
+<span class="fc" id="L146">        return userRepository.findById(userId)</span>
+<span class="pc" id="L147">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;User&quot;, userId));</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Page&lt;UserEntity&gt; listUsers(Pageable pageable) {
+<span class="fc" id="L152">        return userRepository.findAll(pageable);</span>
+    }
+
+    public UserEntity changeAccountStatus(Long userId, AccountStatus newStatus, Long changedByUserId) {
+<span class="fc" id="L156">        Objects.requireNonNull(userId, &quot;User ID must not be null&quot;);</span>
+<span class="fc" id="L157">        Objects.requireNonNull(newStatus, &quot;New status must not be null&quot;);</span>
+
+<span class="fc" id="L159">        UserEntity user = userRepository.findById(userId)</span>
+<span class="pc" id="L160">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;User&quot;, userId));</span>
+
+<span class="fc" id="L162">        AccountStatus currentStatus = user.getAccountStatus();</span>
+<span class="fc" id="L163">        validateStatusTransition(currentStatus, newStatus);</span>
+
+<span class="fc" id="L165">        user.setAccountStatus(newStatus);</span>
+<span class="pc bpc" id="L166" title="3 of 4 branches missed.">        if (newStatus == AccountStatus.DISABLED || newStatus == AccountStatus.BLACKLISTED) {</span>
+<span class="fc" id="L167">            user.setDisabledAt(Instant.now());</span>
+<span class="fc" id="L168">        } else {</span>
+<span class="nc" id="L169">            user.setDisabledAt(null);</span>
+        }
+<span class="fc" id="L171">        user.setUpdatedAt(Instant.now());</span>
+
+<span class="fc" id="L173">        UserEntity saved = userRepository.save(user);</span>
+
+<span class="fc" id="L175">        auditService.log(changedByUserId, &quot;CHANGE_ACCOUNT_STATUS&quot;, &quot;User&quot;, userId,</span>
+<span class="fc" id="L176">                &quot;{\&quot;from\&quot;:\&quot;&quot; + currentStatus + &quot;\&quot;,\&quot;to\&quot;:\&quot;&quot; + newStatus + &quot;\&quot;}&quot;);</span>
+<span class="fc" id="L177">        log.info(&quot;Account status changed for user id={} from {} to {}&quot;, userId, currentStatus, newStatus);</span>
+<span class="fc" id="L178">        return saved;</span>
+    }
+
+    public UserRoleEntity assignRole(Long userId, Role role, Long grantedByUserId) {
+<span class="fc" id="L182">        Objects.requireNonNull(userId, &quot;User ID must not be null&quot;);</span>
+<span class="fc" id="L183">        Objects.requireNonNull(role, &quot;Role must not be null&quot;);</span>
+
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">        if (!userRepository.existsById(userId)) {</span>
+<span class="nc" id="L186">            throw new ResourceNotFoundException(&quot;User&quot;, userId);</span>
+        }
+
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        if (userRoleRepository.existsByUserIdAndRole(userId, role)) {</span>
+<span class="nc" id="L190">            throw new ConflictException(&quot;User already has role: &quot; + role);</span>
+        }
+
+<span class="fc" id="L193">        UserEntity user = userRepository.findById(userId)</span>
+<span class="pc" id="L194">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;User&quot;, userId));</span>
+
+<span class="fc" id="L196">        UserRoleEntity roleEntity = new UserRoleEntity();</span>
+<span class="fc" id="L197">        roleEntity.setUser(user);</span>
+<span class="fc" id="L198">        roleEntity.setRole(role);</span>
+<span class="fc" id="L199">        roleEntity.setGrantedAt(Instant.now());</span>
+<span class="fc" id="L200">        roleEntity.setGrantedBy(grantedByUserId);</span>
+
+<span class="fc" id="L202">        UserRoleEntity saved = userRoleRepository.save(roleEntity);</span>
+
+<span class="fc" id="L204">        auditService.log(grantedByUserId, &quot;ASSIGN_ROLE&quot;, &quot;User&quot;, userId,</span>
+<span class="fc" id="L205">                &quot;{\&quot;role\&quot;:\&quot;&quot; + role + &quot;\&quot;}&quot;);</span>
+<span class="fc" id="L206">        log.info(&quot;Role {} assigned to user id={}&quot;, role, userId);</span>
+<span class="fc" id="L207">        return saved;</span>
+    }
+
+    public void revokeRole(Long userId, Role role, Long revokedByUserId) {
+<span class="nc" id="L211">        Objects.requireNonNull(userId, &quot;User ID must not be null&quot;);</span>
+<span class="nc" id="L212">        Objects.requireNonNull(role, &quot;Role must not be null&quot;);</span>
+
+<span class="nc bnc" id="L214" title="All 2 branches missed.">        if (!userRepository.existsById(userId)) {</span>
+<span class="nc" id="L215">            throw new ResourceNotFoundException(&quot;User&quot;, userId);</span>
+        }
+
+<span class="nc bnc" id="L218" title="All 2 branches missed.">        if (!userRoleRepository.existsByUserIdAndRole(userId, role)) {</span>
+<span class="nc" id="L219">            throw new ResourceNotFoundException(&quot;User role &quot; + role + &quot; not found for user &quot; + userId);</span>
+        }
+
+<span class="nc" id="L222">        userRoleRepository.deleteByUserIdAndRole(userId, role);</span>
+
+<span class="nc" id="L224">        auditService.log(revokedByUserId, &quot;REVOKE_ROLE&quot;, &quot;User&quot;, userId,</span>
+<span class="nc" id="L225">                &quot;{\&quot;role\&quot;:\&quot;&quot; + role + &quot;\&quot;}&quot;);</span>
+<span class="nc" id="L226">        log.info(&quot;Role {} revoked from user id={}&quot;, role, userId);</span>
+<span class="nc" id="L227">    }</span>
+
+    @Transactional(readOnly = true)
+    public UserEntity getUserProfile(Long targetUserId, Long requestingUserId) {
+<span class="nc" id="L231">        Objects.requireNonNull(targetUserId, &quot;Target user ID must not be null&quot;);</span>
+
+<span class="nc" id="L233">        UserEntity user = userRepository.findById(targetUserId)</span>
+<span class="nc" id="L234">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;User&quot;, targetUserId));</span>
+
+<span class="nc bnc" id="L236" title="All 2 branches missed.">        if (targetUserId.equals(requestingUserId)) {</span>
+            // Own profile: decrypt PII for the caller
+            // The caller will have access to the decrypted data via the entity
+            // Decryption happens on demand when the caller reads PII fields
+<span class="nc" id="L240">            log.debug(&quot;User id={} accessing own profile&quot;, requestingUserId);</span>
+<span class="nc" id="L241">        } else {</span>
+            // Viewing another user's profile: mask PII
+            // Clear encrypted fields so caller cannot access them
+<span class="nc" id="L244">            user.setEmailEncrypted(null);</span>
+<span class="nc" id="L245">            user.setPhoneEncrypted(null);</span>
+<span class="nc" id="L246">            log.debug(&quot;User id={} accessing profile of user id={} (masked)&quot;, requestingUserId, targetUserId);</span>
+        }
+
+<span class="nc" id="L249">        return user;</span>
+    }
+
+    private void validateStatusTransition(AccountStatus current, AccountStatus target) {
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">        if (current == target) {</span>
+<span class="nc" id="L254">            throw new ConflictException(&quot;Account is already in status: &quot; + current);</span>
+        }
+        // ACTIVE -&gt; DISABLED or BLACKLISTED allowed
+        // DISABLED -&gt; ACTIVE or BLACKLISTED allowed
+        // BLACKLISTED -&gt; DISABLED allowed (rehabilitation path)
+<span class="pc bpc" id="L259" title="2 of 3 branches missed.">        boolean valid = switch (current) {</span>
+<span class="pc bpc" id="L260" title="3 of 4 branches missed.">            case ACTIVE -&gt; target == AccountStatus.DISABLED || target == AccountStatus.BLACKLISTED;</span>
+<span class="nc bnc" id="L261" title="All 4 branches missed.">            case DISABLED -&gt; target == AccountStatus.ACTIVE || target == AccountStatus.BLACKLISTED;</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">            case BLACKLISTED -&gt; target == AccountStatus.DISABLED;</span>
+        };
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">        if (!valid) {</span>
+<span class="nc" id="L265">            throw new ConflictException(&quot;Invalid status transition from &quot; + current + &quot; to &quot; + target);</span>
+        }
+<span class="fc" id="L267">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

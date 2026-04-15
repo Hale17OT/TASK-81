@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CrawlerUseCase.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.core.port.inbound</a> &gt; <span class="el_source">CrawlerUseCase.java</span></div><h1>CrawlerUseCase.java</h1><pre class="source lang-java linenums">package com.campusstore.core.port.inbound;
+
+import com.campusstore.core.domain.model.CrawlerTaskStatus;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.time.Instant;
+import java.util.List;
+
+/**
+ * Inbound port for external-data crawler job operations.
+ */
+public interface CrawlerUseCase {
+
+    /**
+     * List all crawler jobs.
+     *
+     * @return list of crawler job views
+     */
+    List&lt;CrawlerJobView&gt; listJobs();
+
+    /**
+     * Create a new crawler job definition.
+     *
+     * @param command the job details
+     * @return the id of the created job
+     */
+    Long createJob(CreateCrawlerJobCommand command);
+
+    /**
+     * Update an existing crawler job definition.
+     *
+     * @param id      the job id
+     * @param command the updated job details
+     */
+    void updateJob(Long id, CreateCrawlerJobCommand command);
+
+    /**
+     * Trigger execution of a crawler job.
+     *
+     * @param jobId the job id to run
+     */
+    void runJob(Long jobId);
+
+    /**
+     * Get failures for a specific crawler job.
+     *
+     * @param jobId    the job id
+     * @param pageable pagination information
+     * @return a page of failure entries
+     */
+    Page&lt;CrawlerFailureView&gt; getFailures(Long jobId, Pageable pageable);
+
+    /**
+     * Check data-quality thresholds for a crawler job and return any violations.
+     *
+     * @param jobId the job id
+     * @return the threshold check result
+     */
+    ThresholdCheckResult checkThresholds(Long jobId);
+
+    // ── Command types ──────────────────────────────────────────────────
+
+<span class="nc" id="L65">    record CreateCrawlerJobCommand(</span>
+            String name,
+            String sourceUrl,
+            String cronExpression,
+            int failureThreshold,
+            boolean enabled
+    ) {
+    }
+
+    // ── View types ─────────────────────────────────────────────────────
+
+<span class="nc" id="L76">    record CrawlerJobView(</span>
+            Long id,
+            String name,
+            String sourceUrl,
+            String cronExpression,
+            int failureThreshold,
+            boolean enabled,
+            CrawlerTaskStatus lastStatus,
+            Instant lastRunAt,
+            Instant createdAt
+    ) {
+    }
+
+<span class="nc" id="L89">    record CrawlerFailureView(</span>
+            Long id,
+            Long jobId,
+            String errorMessage,
+            String stackTrace,
+            Instant occurredAt
+    ) {
+    }
+
+<span class="nc" id="L98">    record ThresholdCheckResult(</span>
+            Long jobId,
+            boolean thresholdExceeded,
+            int recentFailureCount,
+            int threshold,
+            String message
+    ) {
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserAdminController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.api.controller</a> &gt; <span class="el_source">UserAdminController.java</span></div><h1>UserAdminController.java</h1><pre class="source lang-java linenums">package com.campusstore.api.controller;
+
+import com.campusstore.api.dto.ApiResponse;
+import com.campusstore.api.dto.ChangeRolesRequest;
+import com.campusstore.api.dto.ChangeStatusRequest;
+import com.campusstore.api.dto.CreateUserRequest;
+import com.campusstore.api.dto.PagedResponse;
+import com.campusstore.api.dto.UpdateUserRequest;
+import com.campusstore.core.domain.model.Role;
+import com.campusstore.core.service.UserManagementService;
+import com.campusstore.infrastructure.persistence.entity.UserEntity;
+import com.campusstore.infrastructure.persistence.entity.UserRoleEntity;
+import com.campusstore.infrastructure.security.service.CampusUserPrincipal;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping(&quot;/api/admin/users&quot;)
+@PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+public class UserAdminController {
+
+    private final UserManagementService userManagementService;
+
+<span class="fc" id="L39">    public UserAdminController(UserManagementService userManagementService) {</span>
+<span class="fc" id="L40">        this.userManagementService = userManagementService;</span>
+<span class="fc" id="L41">    }</span>
+
+    @GetMapping
+    public ResponseEntity&lt;ApiResponse&lt;PagedResponse&lt;UserEntity&gt;&gt;&gt; listUsers(
+            @RequestParam(defaultValue = &quot;0&quot;) int page,
+            @RequestParam(defaultValue = &quot;20&quot;) int size) {
+<span class="fc" id="L47">        Page&lt;UserEntity&gt; result = userManagementService.listUsers(PageRequest.of(page, size));</span>
+<span class="fc" id="L48">        return ResponseEntity.ok(ApiResponse.success(PagedResponse.from(result)));</span>
+    }
+
+    @PostMapping
+    public ResponseEntity&lt;ApiResponse&lt;Map&lt;String, Long&gt;&gt;&gt; createUser(
+            @AuthenticationPrincipal CampusUserPrincipal principal,
+            @Valid @RequestBody CreateUserRequest request) {
+<span class="pc bpc" id="L55" title="2 of 4 branches missed.">        Role initialRole = (request.getRoles() != null &amp;&amp; !request.getRoles().isEmpty())</span>
+<span class="pc" id="L56">                ? request.getRoles().get(0) : null;</span>
+<span class="fc" id="L57">        UserEntity created = userManagementService.createUser(</span>
+<span class="fc" id="L58">                request.getUsername(),</span>
+<span class="fc" id="L59">                request.getPassword(),</span>
+<span class="fc" id="L60">                request.getDisplayName(),</span>
+<span class="fc" id="L61">                request.getEmail(),</span>
+<span class="fc" id="L62">                request.getPhone(),</span>
+<span class="fc" id="L63">                initialRole,</span>
+<span class="fc" id="L64">                request.getDepartmentId(),</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">                principal != null ? principal.getUserId() : null</span>
+        );
+        // Assign additional roles if more than one
+<span class="pc bpc" id="L68" title="2 of 4 branches missed.">        if (request.getRoles() != null &amp;&amp; request.getRoles().size() &gt; 1) {</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">            for (int i = 1; i &lt; request.getRoles().size(); i++) {</span>
+<span class="nc" id="L70">                userManagementService.assignRole(</span>
+<span class="nc" id="L71">                        created.getId(),</span>
+<span class="nc" id="L72">                        request.getRoles().get(i),</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">                        principal != null ? principal.getUserId() : null</span>
+                );
+            }
+        }
+<span class="fc" id="L77">        return ResponseEntity.ok(ApiResponse.success(Map.of(&quot;id&quot;, created.getId())));</span>
+    }
+
+    @GetMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;UserEntity&gt;&gt; getUser(
+            @PathVariable Long id) {
+<span class="fc" id="L83">        UserEntity user = userManagementService.getUserById(id);</span>
+<span class="fc" id="L84">        return ResponseEntity.ok(ApiResponse.success(user));</span>
+    }
+
+    @PutMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;Void&gt;&gt; updateUser(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CampusUserPrincipal principal,
+            @Valid @RequestBody UpdateUserRequest request) {
+<span class="fc" id="L92">        userManagementService.updateUser(</span>
+<span class="fc" id="L93">                id,</span>
+<span class="fc" id="L94">                request.getDisplayName(),</span>
+<span class="fc" id="L95">                request.getEmail(),</span>
+<span class="fc" id="L96">                request.getPhone(),</span>
+<span class="fc" id="L97">                request.getDepartmentId(),</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">                principal != null ? principal.getUserId() : null</span>
+        );
+<span class="fc" id="L100">        return ResponseEntity.ok(ApiResponse.success());</span>
+    }
+
+    @PutMapping(&quot;/{id}/status&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;Void&gt;&gt; changeStatus(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CampusUserPrincipal principal,
+            @Valid @RequestBody ChangeStatusRequest request) {
+<span class="fc" id="L108">        userManagementService.changeAccountStatus(id, request.getStatus(),</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">                principal != null ? principal.getUserId() : null);</span>
+<span class="fc" id="L110">        return ResponseEntity.ok(ApiResponse.success());</span>
+    }
+
+    @PutMapping(&quot;/{id}/roles&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;Void&gt;&gt; changeRoles(
+            @PathVariable Long id,
+            @Valid @RequestBody ChangeRolesRequest request,
+            @AuthenticationPrincipal CampusUserPrincipal principal) {
+        // Get the user to see their current roles
+<span class="fc" id="L119">        UserEntity user = userManagementService.getUserById(id);</span>
+<span class="fc" id="L120">        List&lt;Role&gt; desiredRoles = request.getRoles();</span>
+
+        // We need to look at existing roles - get the user's roles from the entity
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        List&lt;Role&gt; currentRoles = user.getRoles() != null</span>
+<span class="fc" id="L124">                ? user.getRoles().stream().map(UserRoleEntity::getRole).toList()</span>
+<span class="nc" id="L125">                : List.of();</span>
+
+        // Revoke roles not in the desired list
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        for (Role role : currentRoles) {</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">            if (!desiredRoles.contains(role)) {</span>
+<span class="nc" id="L130">                userManagementService.revokeRole(id, role,</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">                        principal != null ? principal.getUserId() : null);</span>
+            }
+        }
+
+        // Assign roles not currently held
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        for (Role role : desiredRoles) {</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            if (!currentRoles.contains(role)) {</span>
+<span class="fc" id="L138">                userManagementService.assignRole(id, role,</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">                        principal != null ? principal.getUserId() : null);</span>
+            }
+        }
+
+<span class="fc" id="L143">        return ResponseEntity.ok(ApiResponse.success());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

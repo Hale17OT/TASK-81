@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -18,13 +19,13 @@ class UserAdminApiHttpTest extends BaseHttpApiTest {
     @Test
     void listUsers_asAdmin_doesNotReturn401or403() {
         HttpClient client = adminClient();
-        // UserEntity contains lazy @ManyToOne(department) that may cause Jackson
-        // serialization failures. Verify authorization passes (not 401/403).
-        ResponseEntity<String> response = client.get("/api/admin/users", String.class);
-        assertTrue(
-                response.getStatusCode() != HttpStatus.UNAUTHORIZED
-                        && response.getStatusCode() != HttpStatus.FORBIDDEN,
-                "Admin should be authorized but got " + response.getStatusCode());
+        ResponseEntity<Map> response = client.get("/api/admin/users", Map.class);
+        assertEquals(HttpStatus.OK, response.getStatusCode(),
+                "Admin must be able to list users");
+        assertTrue((Boolean) response.getBody().get("success"),
+                "User list response must have success=true");
+        assertNotNull(response.getBody().get("data"),
+                "User list data must not be null");
     }
 
     @Test
@@ -86,8 +87,9 @@ class UserAdminApiHttpTest extends BaseHttpApiTest {
 
         // Create a user to retrieve
         String ts = String.valueOf(System.currentTimeMillis());
+        String username = "getuser_" + ts;
         Map<String, Object> createReq = Map.of(
-                "username", "getuser_" + ts,
+                "username", username,
                 "password", "SecurePass123!",
                 "displayName", "Get User Test",
                 "email", "getuser" + ts + "@campus.edu",
@@ -98,14 +100,16 @@ class UserAdminApiHttpTest extends BaseHttpApiTest {
         assertEquals(HttpStatus.OK, createResp.getStatusCode());
         Long userId = ((Number) ((Map<String, Object>) createResp.getBody().get("data")).get("id")).longValue();
 
-        // Retrieve the user as String to avoid deserialization issues
-        // from UserEntity lazy proxy serialization
-        ResponseEntity<String> response = client.get(
-                "/api/admin/users/" + userId, String.class);
-        assertTrue(
-                response.getStatusCode() != HttpStatus.UNAUTHORIZED
-                        && response.getStatusCode() != HttpStatus.FORBIDDEN,
-                "Admin should be authorized but got " + response.getStatusCode());
+        // Retrieve the created user — must return 200 with success=true
+        ResponseEntity<Map> response = client.get(
+                "/api/admin/users/" + userId, Map.class);
+        assertEquals(HttpStatus.OK, response.getStatusCode(),
+                "Admin must be able to get a user by id");
+        assertTrue((Boolean) response.getBody().get("success"),
+                "Get user response must have success=true");
+        Map<String, Object> data = (Map<String, Object>) response.getBody().get("data");
+        assertEquals(username, data.get("username"),
+                "Retrieved user must have the expected username");
     }
 
     // ── PUT /api/admin/users/{id} ─────────────────────────────────────
@@ -137,5 +141,100 @@ class UserAdminApiHttpTest extends BaseHttpApiTest {
                 "/api/admin/users/" + userId, updateReq, Map.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue((Boolean) response.getBody().get("success"));
+    }
+
+    // ── GET /api/admin/users/{id} (student → 403) ───────────────────
+
+    @Test
+    void getUser_asStudent_returns403() {
+        HttpClient client = studentClient();
+        ResponseEntity<Map> response = client.get("/api/admin/users/1", Map.class);
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    }
+
+    // ── PUT /api/admin/users/{id} (student → 403) ───────────────────
+
+    @Test
+    void updateUser_asStudent_returns403() {
+        HttpClient client = studentClient();
+        ResponseEntity<Map> response = client.put("/api/admin/users/1",
+                Map.of("displayName", "Forbidden"), Map.class);
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    }
+
+    // ── PUT /api/admin/users/{id}/status ─────────────────────────────
+
+    @Test
+    void updateUserStatus_asAdmin_isAccessible() {
+        HttpClient client = adminClient();
+
+        // Create a user to update status
+        String ts = String.valueOf(System.currentTimeMillis());
+        Map<String, Object> createReq = Map.of(
+                "username", "statususer_" + ts,
+                "password", "SecurePass123!",
+                "displayName", "Status User Test",
+                "email", "statususer" + ts + "@campus.edu",
+                "roles", List.of("STUDENT")
+        );
+        ResponseEntity<Map> createResp = client.post(
+                "/api/admin/users", createReq, Map.class);
+        assertEquals(HttpStatus.OK, createResp.getStatusCode());
+        Long userId = ((Number) ((Map<String, Object>) createResp.getBody().get("data")).get("id")).longValue();
+
+        Map<String, Object> statusReq = Map.of("status", "DISABLED");
+        ResponseEntity<Map> response = client.put(
+                "/api/admin/users/" + userId + "/status", statusReq, Map.class);
+        assertEquals(HttpStatus.OK, response.getStatusCode(),
+                "Admin must be able to update user status");
+        assertTrue((Boolean) response.getBody().get("success"),
+                "Update status response must have success=true");
+    }
+
+    @Test
+    void updateUserStatus_asStudent_returns403() {
+        HttpClient client = studentClient();
+        Map<String, Object> statusReq = Map.of("active", false);
+        ResponseEntity<Map> response = client.put(
+                "/api/admin/users/1/status", statusReq, Map.class);
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    }
+
+    // ── PUT /api/admin/users/{id}/roles ──────────────────────────────
+
+    @Test
+    void updateUserRoles_asAdmin_isAccessible() {
+        HttpClient client = adminClient();
+
+        // Create a user to update roles
+        String ts = String.valueOf(System.currentTimeMillis());
+        Map<String, Object> createReq = Map.of(
+                "username", "rolesuser_" + ts,
+                "password", "SecurePass123!",
+                "displayName", "Roles User Test",
+                "email", "rolesuser" + ts + "@campus.edu",
+                "roles", List.of("STUDENT")
+        );
+        ResponseEntity<Map> createResp = client.post(
+                "/api/admin/users", createReq, Map.class);
+        assertEquals(HttpStatus.OK, createResp.getStatusCode());
+        Long userId = ((Number) ((Map<String, Object>) createResp.getBody().get("data")).get("id")).longValue();
+
+        Map<String, Object> rolesReq = Map.of("roles", List.of("STUDENT", "TEACHER"));
+        ResponseEntity<Map> response = client.put(
+                "/api/admin/users/" + userId + "/roles", rolesReq, Map.class);
+        assertEquals(HttpStatus.OK, response.getStatusCode(),
+                "Admin must be able to update user roles");
+        assertTrue((Boolean) response.getBody().get("success"),
+                "Update roles response must have success=true");
+    }
+
+    @Test
+    void updateUserRoles_asStudent_returns403() {
+        HttpClient client = studentClient();
+        Map<String, Object> rolesReq = Map.of("roles", List.of("ADMIN"));
+        ResponseEntity<Map> response = client.put(
+                "/api/admin/users/1/roles", rolesReq, Map.class);
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
     }
 }

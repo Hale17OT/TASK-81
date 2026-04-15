@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NavModelAdvice.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.web.controller</a> &gt; <span class="el_source">NavModelAdvice.java</span></div><h1>NavModelAdvice.java</h1><pre class="source lang-java linenums">package com.campusstore.web.controller;
+
+import com.campusstore.infrastructure.persistence.entity.NotificationEntity;
+import com.campusstore.infrastructure.security.service.CampusUserPrincipal;
+import com.campusstore.web.client.InternalApiClient;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ModelAttribute;
+
+import java.util.List;
+
+/**
+ * Global model-attribute supplier for the nav bar's notification fragment
+ * ({@code templates/fragments/notifications.html}).
+ *
+ * Every Thymeleaf view that includes the notification bell reads
+ * {@code unreadNotificationCount} and {@code recentNotifications}. Without this advice
+ * those attributes are {@code null} on every page, so the badge never renders and the
+ * dropdown list is always empty. This @ControllerAdvice populates them for any
+ * authenticated request — unauthenticated requests get safe defaults so the fragment
+ * still renders cleanly.
+ */
+@ControllerAdvice(basePackages = &quot;com.campusstore.web.controller&quot;)
+public class NavModelAdvice {
+
+    private static final int RECENT_LIMIT = 5;
+
+    private final InternalApiClient apiClient;
+
+<span class="fc" id="L32">    public NavModelAdvice(InternalApiClient apiClient) {</span>
+<span class="fc" id="L33">        this.apiClient = apiClient;</span>
+<span class="fc" id="L34">    }</span>
+
+    @ModelAttribute(&quot;unreadNotificationCount&quot;)
+    public long unreadNotificationCount(@AuthenticationPrincipal CampusUserPrincipal principal) {
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">        if (principal == null) return 0L;</span>
+        try {
+<span class="nc" id="L40">            return apiClient.getUnreadCount(principal.getUserId());</span>
+<span class="fc" id="L41">        } catch (Exception e) {</span>
+            // Nav rendering must never take down a page — fall back to a safe default.
+<span class="fc" id="L43">            return 0L;</span>
+        }
+    }
+
+    @ModelAttribute(&quot;recentNotifications&quot;)
+    public List&lt;NotificationEntity&gt; recentNotifications(@AuthenticationPrincipal CampusUserPrincipal principal) {
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">        if (principal == null) return List.of();</span>
+        try {
+<span class="pc" id="L51">            return apiClient</span>
+<span class="nc" id="L52">                    .listNotifications(principal.getUserId(), PageRequest.of(0, RECENT_LIMIT))</span>
+<span class="nc" id="L53">                    .getContent();</span>
+<span class="fc" id="L54">        } catch (Exception e) {</span>
+<span class="fc" id="L55">            return List.of();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

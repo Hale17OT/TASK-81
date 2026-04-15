@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ItemRequestEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.infrastructure.persistence.entity</a> &gt; <span class="el_source">ItemRequestEntity.java</span></div><h1>ItemRequestEntity.java</h1><pre class="source lang-java linenums">package com.campusstore.infrastructure.persistence.entity;
+
+import com.campusstore.core.domain.model.RequestStatus;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+import java.time.Instant;
+
+@Entity
+@Table(name = &quot;item_request&quot;)
+<span class="fc" id="L22">public class ItemRequestEntity {</span>
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = &quot;requester_id&quot;, insertable = false, updatable = false)
+    private Long requesterId;
+
+    @Column(name = &quot;item_id&quot;, insertable = false, updatable = false)
+    private Long itemId;
+
+    @Column(name = &quot;approver_id&quot;, insertable = false, updatable = false)
+    private Long approverId;
+
+    @Column(name = &quot;quantity&quot;)
+    private Integer quantity;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = &quot;status&quot;)
+    private RequestStatus status;
+
+    @Column(name = &quot;justification&quot;)
+    private String justification;
+
+    @Column(name = &quot;rejection_reason&quot;)
+    private String rejectionReason;
+
+    @Column(name = &quot;approved_at&quot;)
+    private Instant approvedAt;
+
+    @Column(name = &quot;picked_up_at&quot;)
+    private Instant pickedUpAt;
+
+    @Column(name = &quot;pickup_deadline&quot;)
+    private Instant pickupDeadline;
+
+    @Column(name = &quot;created_at&quot;)
+    private Instant createdAt;
+
+    @Column(name = &quot;updated_at&quot;)
+    private Instant updatedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;requester_id&quot;)
+    private UserEntity requester;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;item_id&quot;)
+    private InventoryItemEntity item;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;approver_id&quot;)
+    private UserEntity approver;
+
+    public Long getId() {
+<span class="fc" id="L78">        return id;</span>
+    }
+
+    public void setId(Long id) {
+<span class="fc" id="L82">        this.id = id;</span>
+<span class="fc" id="L83">    }</span>
+
+    public Long getRequesterId() {
+<span class="fc" id="L86">        return requesterId;</span>
+    }
+
+    public void setRequesterId(Long requesterId) {
+<span class="fc" id="L90">        this.requesterId = requesterId;</span>
+<span class="fc" id="L91">    }</span>
+
+    public Long getItemId() {
+<span class="fc" id="L94">        return itemId;</span>
+    }
+
+    public void setItemId(Long itemId) {
+<span class="nc" id="L98">        this.itemId = itemId;</span>
+<span class="nc" id="L99">    }</span>
+
+    public Long getApproverId() {
+<span class="fc" id="L102">        return approverId;</span>
+    }
+
+    public void setApproverId(Long approverId) {
+<span class="fc" id="L106">        this.approverId = approverId;</span>
+<span class="fc" id="L107">    }</span>
+
+    public Integer getQuantity() {
+<span class="fc" id="L110">        return quantity;</span>
+    }
+
+    public void setQuantity(Integer quantity) {
+<span class="fc" id="L114">        this.quantity = quantity;</span>
+<span class="fc" id="L115">    }</span>
+
+    public RequestStatus getStatus() {
+<span class="fc" id="L118">        return status;</span>
+    }
+
+    public void setStatus(RequestStatus status) {
+<span class="fc" id="L122">        this.status = status;</span>
+<span class="fc" id="L123">    }</span>
+
+    public String getJustification() {
+<span class="fc" id="L126">        return justification;</span>
+    }
+
+    public void setJustification(String justification) {
+<span class="fc" id="L130">        this.justification = justification;</span>
+<span class="fc" id="L131">    }</span>
+
+    public String getRejectionReason() {
+<span class="fc" id="L134">        return rejectionReason;</span>
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+<span class="nc" id="L138">        this.rejectionReason = rejectionReason;</span>
+<span class="nc" id="L139">    }</span>
+
+    public Instant getApprovedAt() {
+<span class="fc" id="L142">        return approvedAt;</span>
+    }
+
+    public void setApprovedAt(Instant approvedAt) {
+<span class="fc" id="L146">        this.approvedAt = approvedAt;</span>
+<span class="fc" id="L147">    }</span>
+
+    public Instant getPickedUpAt() {
+<span class="fc" id="L150">        return pickedUpAt;</span>
+    }
+
+    public void setPickedUpAt(Instant pickedUpAt) {
+<span class="fc" id="L154">        this.pickedUpAt = pickedUpAt;</span>
+<span class="fc" id="L155">    }</span>
+
+    public Instant getPickupDeadline() {
+<span class="fc" id="L158">        return pickupDeadline;</span>
+    }
+
+    public void setPickupDeadline(Instant pickupDeadline) {
+<span class="fc" id="L162">        this.pickupDeadline = pickupDeadline;</span>
+<span class="fc" id="L163">    }</span>
+
+    public Instant getCreatedAt() {
+<span class="fc" id="L166">        return createdAt;</span>
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+<span class="fc" id="L170">        this.createdAt = createdAt;</span>
+<span class="fc" id="L171">    }</span>
+
+    public Instant getUpdatedAt() {
+<span class="fc" id="L174">        return updatedAt;</span>
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+<span class="fc" id="L178">        this.updatedAt = updatedAt;</span>
+<span class="fc" id="L179">    }</span>
+
+    @JsonIgnore
+    public UserEntity getRequester() {
+<span class="nc" id="L183">        return requester;</span>
+    }
+
+    public void setRequester(UserEntity requester) {
+<span class="fc" id="L187">        this.requester = requester;</span>
+<span class="fc" id="L188">    }</span>
+
+    @JsonIgnore
+    public InventoryItemEntity getItem() {
+<span class="fc" id="L192">        return item;</span>
+    }
+
+    public void setItem(InventoryItemEntity item) {
+<span class="fc" id="L196">        this.item = item;</span>
+<span class="fc" id="L197">    }</span>
+
+    @JsonIgnore
+    public UserEntity getApprover() {
+<span class="fc" id="L201">        return approver;</span>
+    }
+
+    public void setApprover(UserEntity approver) {
+<span class="fc" id="L205">        this.approver = approver;</span>
+<span class="fc" id="L206">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

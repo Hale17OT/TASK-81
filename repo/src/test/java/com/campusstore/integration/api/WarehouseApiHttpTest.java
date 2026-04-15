@@ -7,7 +7,9 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -18,15 +20,14 @@ class WarehouseApiHttpTest extends BaseHttpApiTest {
     @Test
     void listLocations_asAdmin_doesNotReturn401or403() {
         HttpClient client = adminClient();
-        ResponseEntity<String> response = client.get(
-                "/api/warehouse/locations", String.class);
-        // The admin is authorized. The endpoint may return 500 due to Hibernate lazy-
-        // proxy serialization of StorageLocationEntity.zone, which is a pre-existing
-        // design issue unrelated to authorization. Verify we do NOT get 401/403.
-        assertTrue(
-                response.getStatusCode() != HttpStatus.UNAUTHORIZED
-                        && response.getStatusCode() != HttpStatus.FORBIDDEN,
-                "Admin should be authorized but got " + response.getStatusCode());
+        ResponseEntity<Map> response = client.get(
+                "/api/warehouse/locations", Map.class);
+        assertEquals(HttpStatus.OK, response.getStatusCode(),
+                "Admin must be able to list warehouse locations");
+        assertTrue((Boolean) response.getBody().get("success"),
+                "Warehouse locations response must have success=true");
+        assertNotNull(response.getBody().get("data"),
+                "Warehouse locations data must not be null");
     }
 
     @Test
@@ -82,16 +83,16 @@ class WarehouseApiHttpTest extends BaseHttpApiTest {
     void recommendPutaway_asAdmin_doesNotReturn401or403() {
         HttpClient client = adminClient();
 
-        // Use item id 1 from test data; quantity is validated @Min(1)
+        // Use item id 1 from test data; quantity is validated @Min(1).
+        // Test data includes zone 1 and location 1, so the putaway algorithm
+        // should find at least one candidate location and return 200.
         Map<String, Object> req = Map.of("itemId", 1, "quantity", 1);
-        ResponseEntity<String> response = client.post(
-                "/api/warehouse/putaway", req, String.class);
-        // The result contains lazy-loaded entities; accept 200 or 500 (serialization
-        // issue) but verify authorization is not the problem.
-        assertTrue(
-                response.getStatusCode() != HttpStatus.UNAUTHORIZED
-                        && response.getStatusCode() != HttpStatus.FORBIDDEN,
-                "Admin should be authorized but got " + response.getStatusCode());
+        ResponseEntity<Map> response = client.post(
+                "/api/warehouse/putaway", req, Map.class);
+        assertEquals(HttpStatus.OK, response.getStatusCode(),
+                "Admin must get 200 from putaway recommendation with test data in place");
+        assertTrue((Boolean) response.getBody().get("success"),
+                "Putaway recommendation response must have success=true");
     }
 
     // ── POST /api/warehouse/pick-path ─────────────────────────────────
@@ -131,6 +132,71 @@ class WarehouseApiHttpTest extends BaseHttpApiTest {
         Map<String, Object> req = Map.of("proposedLevelMultiplier", 2.0);
         ResponseEntity<Map> response = client.post(
                 "/api/warehouse/simulate", req, Map.class);
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    }
+
+    // ── PUT /api/warehouse/locations/{id} ────────────────────────────
+
+    @Test
+    void updateLocation_asAdmin_isAccessible() {
+        HttpClient client = adminClient();
+
+        // Get zone ID from listing
+        ResponseEntity<Map> zonesResp = client.get("/api/admin/zones", Map.class);
+        assertEquals(HttpStatus.OK, zonesResp.getStatusCode());
+        List<Map<String, Object>> zones = (List<Map<String, Object>>) zonesResp.getBody().get("data");
+        Long zoneId = ((Number) zones.get(0).get("id")).longValue();
+
+        // Create a location to update
+        Map<String, Object> createReq = Map.of(
+                "name", "LOC-UPD-" + System.currentTimeMillis(),
+                "zoneId", zoneId,
+                "x", 3.0,
+                "y", 4.0,
+                "level", 1,
+                "temperatureZone", "AMBIENT",
+                "securityLevel", "STANDARD",
+                "capacity", 30
+        );
+        ResponseEntity<Map> createResp = client.post(
+                "/api/warehouse/locations", createReq, Map.class);
+        assertEquals(HttpStatus.OK, createResp.getStatusCode());
+        Long locationId = ((Number) ((Map<String, Object>) createResp.getBody().get("data")).get("id")).longValue();
+
+        // Update the location
+        Map<String, Object> updateReq = Map.of(
+                "name", "LOC-UPDATED-" + System.currentTimeMillis(),
+                "zoneId", zoneId,
+                "x", 6.0,
+                "y", 7.0,
+                "level", 2,
+                "temperatureZone", "AMBIENT",
+                "securityLevel", "STANDARD",
+                "capacity", 60
+        );
+        ResponseEntity<Map> response = client.put(
+                "/api/warehouse/locations/" + locationId, updateReq, Map.class);
+        assertEquals(HttpStatus.OK, response.getStatusCode(),
+                "Admin must be able to update a warehouse location");
+        assertTrue((Boolean) response.getBody().get("success"),
+                "Update location response must have success=true");
+    }
+
+    @Test
+    void updateLocation_asStudent_returns403() {
+        HttpClient client = studentClient();
+        Map<String, Object> updateReq = Map.of(
+                "name", "Forbidden Location",
+                "zoneId", 1,
+                "x", 1.0,
+                "y", 1.0,
+                "level", 1,
+                "temperatureZone", "AMBIENT",
+                "securityLevel", "STANDARD",
+                "capacity", 10
+        );
+        ResponseEntity<Map> response = client.put(
+                "/api/warehouse/locations/1", updateReq, Map.class);
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
     }
 }

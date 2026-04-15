@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InventoryController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.api.controller</a> &gt; <span class="el_source">InventoryController.java</span></div><h1>InventoryController.java</h1><pre class="source lang-java linenums">package com.campusstore.api.controller;
+
+import com.campusstore.api.dto.ApiResponse;
+import com.campusstore.api.dto.CreateItemRequest;
+import com.campusstore.api.dto.PagedResponse;
+import com.campusstore.api.dto.UpdateItemRequest;
+import com.campusstore.core.service.InventoryService;
+import com.campusstore.infrastructure.persistence.entity.InventoryItemEntity;
+import com.campusstore.infrastructure.security.service.CampusUserPrincipal;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping(&quot;/api/inventory&quot;)
+public class InventoryController {
+
+    private final InventoryService inventoryService;
+
+<span class="fc" id="L34">    public InventoryController(InventoryService inventoryService) {</span>
+<span class="fc" id="L35">        this.inventoryService = inventoryService;</span>
+<span class="fc" id="L36">    }</span>
+
+    @GetMapping
+    public ResponseEntity&lt;ApiResponse&lt;PagedResponse&lt;InventoryItemEntity&gt;&gt;&gt; listItems(
+            @RequestParam(defaultValue = &quot;0&quot;) int page,
+            @RequestParam(defaultValue = &quot;20&quot;) int size) {
+<span class="fc" id="L42">        Page&lt;InventoryItemEntity&gt; result = inventoryService.listItems(PageRequest.of(page, size));</span>
+<span class="fc" id="L43">        return ResponseEntity.ok(ApiResponse.success(PagedResponse.from(result)));</span>
+    }
+
+    @GetMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;InventoryItemEntity&gt;&gt; getItem(
+            @PathVariable Long id) {
+<span class="fc" id="L49">        InventoryItemEntity item = inventoryService.getItem(id);</span>
+<span class="fc" id="L50">        return ResponseEntity.ok(ApiResponse.success(item));</span>
+    }
+
+    @PostMapping
+    @PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;Map&lt;String, Long&gt;&gt;&gt; createItem(
+            @AuthenticationPrincipal CampusUserPrincipal principal,
+            @Valid @RequestBody CreateItemRequest request) {
+<span class="fc" id="L58">        InventoryItemEntity created = inventoryService.createItem(</span>
+<span class="fc" id="L59">                request.getName(),</span>
+<span class="fc" id="L60">                request.getDescription(),</span>
+<span class="fc" id="L61">                request.getSku(),</span>
+<span class="fc" id="L62">                request.getCategoryId(),</span>
+<span class="fc" id="L63">                request.getDepartmentId(),</span>
+<span class="fc" id="L64">                request.getLocationId(),</span>
+<span class="fc" id="L65">                request.getPriceUsd(),</span>
+<span class="fc" id="L66">                request.getQuantity(),</span>
+<span class="fc" id="L67">                request.isRequiresApproval(),</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">                principal != null ? principal.getUserId() : null,</span>
+<span class="fc" id="L69">                request.getCondition(),</span>
+<span class="fc" id="L70">                request.getExpirationDate()</span>
+        );
+<span class="fc" id="L72">        return ResponseEntity.ok(ApiResponse.success(Map.of(&quot;id&quot;, created.getId())));</span>
+    }
+
+    @PutMapping(&quot;/{id}&quot;)
+    @PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;Void&gt;&gt; updateItem(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CampusUserPrincipal principal,
+            @Valid @RequestBody UpdateItemRequest request) {
+<span class="fc" id="L81">        inventoryService.updateItem(</span>
+<span class="fc" id="L82">                id,</span>
+<span class="fc" id="L83">                request.getName(),</span>
+<span class="fc" id="L84">                request.getDescription(),</span>
+<span class="fc" id="L85">                request.getPriceUsd(),</span>
+<span class="fc" id="L86">                request.getQuantity(),</span>
+<span class="fc" id="L87">                request.getRequiresApproval(),</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">                principal != null ? principal.getUserId() : null</span>
+        );
+<span class="fc" id="L90">        return ResponseEntity.ok(ApiResponse.success());</span>
+    }
+
+    @DeleteMapping(&quot;/{id}&quot;)
+    @PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;Void&gt;&gt; deactivateItem(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CampusUserPrincipal principal) {
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        inventoryService.deactivateItem(id, principal != null ? principal.getUserId() : null);</span>
+<span class="nc" id="L99">        return ResponseEntity.ok(ApiResponse.success());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

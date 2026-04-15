@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PathCostConfigEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.infrastructure.persistence.entity</a> &gt; <span class="el_source">PathCostConfigEntity.java</span></div><h1>PathCostConfigEntity.java</h1><pre class="source lang-java linenums">package com.campusstore.infrastructure.persistence.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+
+@Entity
+@Table(name = &quot;path_cost_config&quot;)
+<span class="fc" id="L15">public class PathCostConfigEntity {</span>
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = &quot;name&quot;)
+    private String name;
+
+    @Column(name = &quot;level_multiplier&quot;)
+    private BigDecimal levelMultiplier;
+
+    @Column(name = &quot;is_active&quot;)
+    private Boolean isActive;
+
+    @Column(name = &quot;config_json&quot;, columnDefinition = &quot;JSON&quot;)
+    private String configJson;
+
+    @Column(name = &quot;created_at&quot;)
+    private Instant createdAt;
+
+    @Column(name = &quot;updated_at&quot;)
+    private Instant updatedAt;
+
+    public Long getId() {
+<span class="nc" id="L40">        return id;</span>
+    }
+
+    public void setId(Long id) {
+<span class="nc" id="L44">        this.id = id;</span>
+<span class="nc" id="L45">    }</span>
+
+    public String getName() {
+<span class="nc" id="L48">        return name;</span>
+    }
+
+    public void setName(String name) {
+<span class="nc" id="L52">        this.name = name;</span>
+<span class="nc" id="L53">    }</span>
+
+    public BigDecimal getLevelMultiplier() {
+<span class="fc" id="L56">        return levelMultiplier;</span>
+    }
+
+    public void setLevelMultiplier(BigDecimal levelMultiplier) {
+<span class="fc" id="L60">        this.levelMultiplier = levelMultiplier;</span>
+<span class="fc" id="L61">    }</span>
+
+    public Boolean getIsActive() {
+<span class="nc" id="L64">        return isActive;</span>
+    }
+
+    public void setIsActive(Boolean isActive) {
+<span class="nc" id="L68">        this.isActive = isActive;</span>
+<span class="nc" id="L69">    }</span>
+
+    public String getConfigJson() {
+<span class="fc" id="L72">        return configJson;</span>
+    }
+
+    public void setConfigJson(String configJson) {
+<span class="fc" id="L76">        this.configJson = configJson;</span>
+<span class="fc" id="L77">    }</span>
+
+    public Instant getCreatedAt() {
+<span class="nc" id="L80">        return createdAt;</span>
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+<span class="nc" id="L84">        this.createdAt = createdAt;</span>
+<span class="nc" id="L85">    }</span>
+
+    public Instant getUpdatedAt() {
+<span class="nc" id="L88">        return updatedAt;</span>
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+<span class="nc" id="L92">        this.updatedAt = updatedAt;</span>
+<span class="nc" id="L93">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

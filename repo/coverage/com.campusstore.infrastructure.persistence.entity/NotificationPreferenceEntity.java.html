@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotificationPreferenceEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.infrastructure.persistence.entity</a> &gt; <span class="el_source">NotificationPreferenceEntity.java</span></div><h1>NotificationPreferenceEntity.java</h1><pre class="source lang-java linenums">package com.campusstore.infrastructure.persistence.entity;
+
+import com.campusstore.core.domain.model.NotificationType;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = &quot;notification_preference&quot;)
+<span class="fc" id="L16">public class NotificationPreferenceEntity {</span>
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = &quot;user_id&quot;)
+    private Long userId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = &quot;notification_type&quot;)
+    private NotificationType notificationType;
+
+    @Column(name = &quot;enabled&quot;)
+    private Boolean enabled;
+
+    @Column(name = &quot;email_enabled&quot;)
+    private Boolean emailEnabled;
+
+    public Long getId() {
+<span class="fc" id="L36">        return id;</span>
+    }
+
+    public void setId(Long id) {
+<span class="nc" id="L40">        this.id = id;</span>
+<span class="nc" id="L41">    }</span>
+
+    public Long getUserId() {
+<span class="fc" id="L44">        return userId;</span>
+    }
+
+    public void setUserId(Long userId) {
+<span class="fc" id="L48">        this.userId = userId;</span>
+<span class="fc" id="L49">    }</span>
+
+    public NotificationType getNotificationType() {
+<span class="fc" id="L52">        return notificationType;</span>
+    }
+
+    public void setNotificationType(NotificationType notificationType) {
+<span class="fc" id="L56">        this.notificationType = notificationType;</span>
+<span class="fc" id="L57">    }</span>
+
+    public Boolean getEnabled() {
+<span class="fc" id="L60">        return enabled;</span>
+    }
+
+    public void setEnabled(Boolean enabled) {
+<span class="fc" id="L64">        this.enabled = enabled;</span>
+<span class="fc" id="L65">    }</span>
+
+    public Boolean getEmailEnabled() {
+<span class="fc" id="L68">        return emailEnabled;</span>
+    }
+
+    public void setEmailEnabled(Boolean emailEnabled) {
+<span class="fc" id="L72">        this.emailEnabled = emailEnabled;</span>
+<span class="fc" id="L73">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

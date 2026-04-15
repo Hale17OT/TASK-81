@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotificationUseCase.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.core.port.inbound</a> &gt; <span class="el_source">NotificationUseCase.java</span></div><h1>NotificationUseCase.java</h1><pre class="source lang-java linenums">package com.campusstore.core.port.inbound;
+
+import com.campusstore.core.domain.model.NotificationType;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.time.Instant;
+import java.util.List;
+
+/**
+ * Inbound port for notification operations.
+ */
+public interface NotificationUseCase {
+
+    /**
+     * Send a notification to a user.
+     *
+     * @param userId   the recipient user id
+     * @param type     the notification type
+     * @param title    the notification title
+     * @param message  the notification message body
+     * @param critical whether this is a critical notification
+     * @param refType  optional reference entity type (e.g. &quot;REQUEST&quot;, &quot;ITEM&quot;)
+     * @param refId    optional reference entity id
+     * @return the id of the created notification
+     */
+    Long sendNotification(Long userId, NotificationType type, String title, String message,
+                          boolean critical, String refType, Long refId);
+
+    /**
+     * List notifications for a user.
+     *
+     * @param userId   the user id
+     * @param pageable pagination information
+     * @return a page of notification views
+     */
+    Page&lt;NotificationView&gt; listNotifications(Long userId, Pageable pageable);
+
+    /**
+     * Mark a single notification as read.
+     *
+     * @param notificationId the notification id
+     * @param userId         the user id (for ownership validation)
+     */
+    void markRead(Long notificationId, Long userId);
+
+    /**
+     * Mark all notifications as read for a user.
+     *
+     * @param userId the user id
+     */
+    void markAllRead(Long userId);
+
+    /**
+     * Get the count of unread notifications for a user.
+     *
+     * @param userId the user id
+     * @return the unread count
+     */
+    long getUnreadCount(Long userId);
+
+    /**
+     * Get a user's notification preferences.
+     *
+     * @param userId the user id
+     * @return list of notification preference views
+     */
+    List&lt;NotificationPrefView&gt; getPreferences(Long userId);
+
+    /**
+     * Update a user's notification preferences.
+     *
+     * @param userId      the user id
+     * @param preferences the preference updates
+     */
+    void updatePreferences(Long userId, List&lt;NotificationPrefCommand&gt; preferences);
+
+    /**
+     * Export the notification outbox (for external delivery systems).
+     *
+     * @return list of outbox entries ready for dispatch
+     */
+    List&lt;OutboxEntry&gt; exportOutbox();
+
+    // ── Command types ──────────────────────────────────────────────────
+
+<span class="nc" id="L88">    record NotificationPrefCommand(</span>
+            NotificationType type,
+            boolean enabled,
+            boolean emailEnabled
+    ) {
+    }
+
+    // ── View types ─────────────────────────────────────────────────────
+
+<span class="nc" id="L97">    record NotificationView(</span>
+            Long id,
+            NotificationType type,
+            String title,
+            String message,
+            boolean read,
+            boolean critical,
+            String referenceType,
+            Long referenceId,
+            Instant createdAt,
+            Instant readAt
+    ) {
+    }
+
+<span class="nc" id="L111">    record NotificationPrefView(</span>
+            NotificationType type,
+            boolean enabled,
+            boolean emailEnabled
+    ) {
+    }
+
+<span class="nc" id="L118">    record OutboxEntry(</span>
+            Long notificationId,
+            Long userId,
+            NotificationType type,
+            String title,
+            String message,
+            boolean critical,
+            String referenceType,
+            Long referenceId,
+            Instant createdAt
+    ) {
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

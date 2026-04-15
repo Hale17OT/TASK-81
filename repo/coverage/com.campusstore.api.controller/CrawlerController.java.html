@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CrawlerController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.api.controller</a> &gt; <span class="el_source">CrawlerController.java</span></div><h1>CrawlerController.java</h1><pre class="source lang-java linenums">package com.campusstore.api.controller;
+
+import com.campusstore.api.dto.ApiResponse;
+import com.campusstore.api.dto.CreateCrawlerJobRequest;
+import com.campusstore.api.dto.PagedResponse;
+import com.campusstore.core.service.CrawlerService;
+import com.campusstore.infrastructure.persistence.entity.CrawlerJobEntity;
+import com.campusstore.infrastructure.persistence.entity.CrawlerTaskEntity;
+import com.campusstore.infrastructure.security.service.CampusUserPrincipal;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping(&quot;/api/admin/crawler&quot;)
+@PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+public class CrawlerController {
+
+    private final CrawlerService crawlerService;
+
+<span class="fc" id="L35">    public CrawlerController(CrawlerService crawlerService) {</span>
+<span class="fc" id="L36">        this.crawlerService = crawlerService;</span>
+<span class="fc" id="L37">    }</span>
+
+    @GetMapping(&quot;/jobs&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;List&lt;CrawlerJobEntity&gt;&gt;&gt; listJobs() {
+<span class="fc" id="L41">        List&lt;CrawlerJobEntity&gt; jobs = crawlerService.listJobs();</span>
+<span class="fc" id="L42">        return ResponseEntity.ok(ApiResponse.success(jobs));</span>
+    }
+
+    @PostMapping(&quot;/jobs&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;Map&lt;String, Long&gt;&gt;&gt; createJob(
+            @AuthenticationPrincipal CampusUserPrincipal principal,
+            @Valid @RequestBody CreateCrawlerJobRequest request) {
+<span class="fc" id="L49">        CrawlerJobEntity created = crawlerService.createJob(</span>
+<span class="fc" id="L50">                request.getName(),</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">                request.getSourceType() != null ? request.getSourceType() : &quot;INTRANET_PAGE&quot;,</span>
+<span class="fc" id="L52">                request.getSourcePath(),</span>
+<span class="fc" id="L53">                request.getCronExpression(),</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">                principal != null ? principal.getUserId() : null</span>
+        );
+<span class="fc" id="L56">        return ResponseEntity.ok(ApiResponse.success(Map.of(&quot;id&quot;, created.getId())));</span>
+    }
+
+    @PutMapping(&quot;/jobs/{id}&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;Void&gt;&gt; updateJob(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CampusUserPrincipal principal,
+            @Valid @RequestBody CreateCrawlerJobRequest request) {
+<span class="fc" id="L64">        crawlerService.updateJob(</span>
+                id,
+<span class="fc" id="L66">                request.getName(),</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">                request.getSourceType() != null ? request.getSourceType() : &quot;INTRANET_PAGE&quot;,</span>
+<span class="fc" id="L68">                request.getSourcePath(),</span>
+<span class="fc" id="L69">                request.getCronExpression(),</span>
+<span class="fc" id="L70">                request.isEnabled(),</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">                principal != null ? principal.getUserId() : null</span>
+        );
+<span class="fc" id="L73">        return ResponseEntity.ok(ApiResponse.success());</span>
+    }
+
+    @PostMapping(&quot;/jobs/{id}/run&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;Void&gt;&gt; runJob(@PathVariable Long id) {
+<span class="fc" id="L78">        crawlerService.runJob(id);</span>
+<span class="fc" id="L79">        return ResponseEntity.ok(ApiResponse.success());</span>
+    }
+
+    @GetMapping(&quot;/jobs/{id}/failures&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;PagedResponse&lt;CrawlerTaskEntity&gt;&gt;&gt; getFailures(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = &quot;0&quot;) int page,
+            @RequestParam(defaultValue = &quot;20&quot;) int size) {
+<span class="fc" id="L87">        Page&lt;CrawlerTaskEntity&gt; result = crawlerService.getFailures(</span>
+<span class="fc" id="L88">                id, PageRequest.of(page, size)</span>
+        );
+<span class="fc" id="L90">        return ResponseEntity.ok(ApiResponse.success(PagedResponse.from(result)));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

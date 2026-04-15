@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuditLogEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.infrastructure.persistence.entity</a> &gt; <span class="el_source">AuditLogEntity.java</span></div><h1>AuditLogEntity.java</h1><pre class="source lang-java linenums">package com.campusstore.infrastructure.persistence.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import java.time.Instant;
+
+@Entity
+@Table(name = &quot;audit_log&quot;)
+<span class="fc" id="L14">public class AuditLogEntity {</span>
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = &quot;actor_user_id&quot;)
+    private Long actorUserId;
+
+    @Column(name = &quot;actor_placeholder_id&quot;)
+    private Long actorPlaceholderId;
+
+    @Column(name = &quot;actor_username_hash&quot;)
+    private String actorUsernameHash;
+
+    @Column(name = &quot;action&quot;)
+    private String action;
+
+    @Column(name = &quot;entity_type&quot;)
+    private String entityType;
+
+    @Column(name = &quot;entity_id&quot;)
+    private Long entityId;
+
+    @Column(name = &quot;details_json&quot;, columnDefinition = &quot;JSON&quot;)
+    private String detailsJson;
+
+    @Column(name = &quot;ip_address&quot;)
+    private String ipAddress;
+
+    @Column(name = &quot;created_at&quot;)
+    private Instant createdAt;
+
+    public Long getId() {
+<span class="fc" id="L48">        return id;</span>
+    }
+
+    public void setId(Long id) {
+<span class="fc" id="L52">        this.id = id;</span>
+<span class="fc" id="L53">    }</span>
+
+    public Long getActorUserId() {
+<span class="fc" id="L56">        return actorUserId;</span>
+    }
+
+    public void setActorUserId(Long actorUserId) {
+<span class="fc" id="L60">        this.actorUserId = actorUserId;</span>
+<span class="fc" id="L61">    }</span>
+
+    public Long getActorPlaceholderId() {
+<span class="fc" id="L64">        return actorPlaceholderId;</span>
+    }
+
+    public void setActorPlaceholderId(Long actorPlaceholderId) {
+<span class="fc" id="L68">        this.actorPlaceholderId = actorPlaceholderId;</span>
+<span class="fc" id="L69">    }</span>
+
+    public String getActorUsernameHash() {
+<span class="fc" id="L72">        return actorUsernameHash;</span>
+    }
+
+    public void setActorUsernameHash(String actorUsernameHash) {
+<span class="fc" id="L76">        this.actorUsernameHash = actorUsernameHash;</span>
+<span class="fc" id="L77">    }</span>
+
+    public String getAction() {
+<span class="fc" id="L80">        return action;</span>
+    }
+
+    public void setAction(String action) {
+<span class="fc" id="L84">        this.action = action;</span>
+<span class="fc" id="L85">    }</span>
+
+    public String getEntityType() {
+<span class="fc" id="L88">        return entityType;</span>
+    }
+
+    public void setEntityType(String entityType) {
+<span class="fc" id="L92">        this.entityType = entityType;</span>
+<span class="fc" id="L93">    }</span>
+
+    public Long getEntityId() {
+<span class="fc" id="L96">        return entityId;</span>
+    }
+
+    public void setEntityId(Long entityId) {
+<span class="fc" id="L100">        this.entityId = entityId;</span>
+<span class="fc" id="L101">    }</span>
+
+    public String getDetailsJson() {
+<span class="fc" id="L104">        return detailsJson;</span>
+    }
+
+    public void setDetailsJson(String detailsJson) {
+<span class="fc" id="L108">        this.detailsJson = detailsJson;</span>
+<span class="fc" id="L109">    }</span>
+
+    public String getIpAddress() {
+<span class="fc" id="L112">        return ipAddress;</span>
+    }
+
+    public void setIpAddress(String ipAddress) {
+<span class="nc" id="L116">        this.ipAddress = ipAddress;</span>
+<span class="nc" id="L117">    }</span>
+
+    public Instant getCreatedAt() {
+<span class="fc" id="L120">        return createdAt;</span>
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+<span class="fc" id="L124">        this.createdAt = createdAt;</span>
+<span class="fc" id="L125">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

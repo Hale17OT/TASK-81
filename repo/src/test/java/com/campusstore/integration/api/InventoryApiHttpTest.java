@@ -16,17 +16,18 @@ class InventoryApiHttpTest extends BaseHttpApiTest {
     void listItems_asAdmin_isAccessible() {
         HttpClient client = adminClient();
         ResponseEntity<Map> response = client.get("/api/inventory", Map.class);
-        // Should not be 401/403
-        assertNotEquals(HttpStatus.UNAUTHORIZED.value(), response.getStatusCode().value());
-        assertNotEquals(HttpStatus.FORBIDDEN.value(), response.getStatusCode().value());
+        assertEquals(HttpStatus.OK, response.getStatusCode(), "Admin must be able to list inventory items");
+        assertTrue((Boolean) response.getBody().get("success"), "Inventory list must have success=true");
+        assertNotNull(response.getBody().get("data"), "Inventory list data must not be null");
     }
 
     @Test
     void listItems_asStudent_isAccessible() {
         HttpClient client = studentClient();
         ResponseEntity<Map> response = client.get("/api/inventory", Map.class);
-        assertNotEquals(HttpStatus.UNAUTHORIZED.value(), response.getStatusCode().value());
-        assertNotEquals(HttpStatus.FORBIDDEN.value(), response.getStatusCode().value());
+        assertEquals(HttpStatus.OK, response.getStatusCode(), "Student must be able to list inventory items");
+        assertTrue((Boolean) response.getBody().get("success"), "Inventory list must have success=true");
+        assertNotNull(response.getBody().get("data"), "Inventory list data must not be null");
     }
 
     @Test
@@ -40,8 +41,11 @@ class InventoryApiHttpTest extends BaseHttpApiTest {
     void getItem_asAdmin_isAccessible() {
         HttpClient client = adminClient();
         ResponseEntity<Map> response = client.get("/api/inventory/1", Map.class);
-        assertNotEquals(HttpStatus.UNAUTHORIZED.value(), response.getStatusCode().value());
-        assertNotEquals(HttpStatus.FORBIDDEN.value(), response.getStatusCode().value());
+        assertEquals(HttpStatus.OK, response.getStatusCode(), "Admin must be able to get inventory item by id");
+        assertTrue((Boolean) response.getBody().get("success"), "Item response must have success=true");
+        Map<String, Object> data = (Map<String, Object>) response.getBody().get("data");
+        assertNotNull(data, "Item data must not be null");
+        assertNotNull(data.get("name"), "Item data must include the name field");
     }
 
     @Test
@@ -66,8 +70,11 @@ class InventoryApiHttpTest extends BaseHttpApiTest {
         req.put("condition", "NEW");
 
         ResponseEntity<Map> response = client.post("/api/inventory", req, Map.class);
-        assertNotEquals(HttpStatus.UNAUTHORIZED.value(), response.getStatusCode().value());
-        assertNotEquals(HttpStatus.FORBIDDEN.value(), response.getStatusCode().value());
+        assertEquals(HttpStatus.OK, response.getStatusCode(), "Admin must be able to create inventory items");
+        assertTrue((Boolean) response.getBody().get("success"), "Create response must have success=true");
+        Map<String, Object> data = (Map<String, Object>) response.getBody().get("data");
+        assertNotNull(data, "Create response data must not be null");
+        assertNotNull(data.get("id"), "Created item must have an id");
     }
 
     @Test
@@ -82,6 +89,31 @@ class InventoryApiHttpTest extends BaseHttpApiTest {
         req.put("condition", "NEW");
 
         ResponseEntity<Map> response = client.post("/api/inventory", req, Map.class);
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    }
+
+    // ── PUT /api/inventory/{id} (admin only) ───────────────────────
+    @Test
+    void updateItem_asAdmin_isAccessible() {
+        HttpClient client = adminClient();
+        Map<String, Object> req = new HashMap<>();
+        req.put("name", "Updated Item " + System.currentTimeMillis());
+        req.put("description", "Updated by test");
+        req.put("priceUsd", 29.99);
+        req.put("quantity", 20);
+
+        ResponseEntity<Map> response = client.put("/api/inventory/1", req, Map.class);
+        assertEquals(HttpStatus.OK, response.getStatusCode(), "Admin must be able to update inventory items");
+        assertTrue((Boolean) response.getBody().get("success"), "Update response must have success=true");
+    }
+
+    @Test
+    void updateItem_asStudent_returns403() {
+        HttpClient client = studentClient();
+        Map<String, Object> req = new HashMap<>();
+        req.put("name", "Forbidden Update");
+
+        ResponseEntity<Map> response = client.put("/api/inventory/1", req, Map.class);
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
     }
 

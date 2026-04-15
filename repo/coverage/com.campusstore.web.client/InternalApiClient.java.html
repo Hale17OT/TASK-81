@@ -1,0 +1,452 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InternalApiClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.web.client</a> &gt; <span class="el_source">InternalApiClient.java</span></div><h1>InternalApiClient.java</h1><pre class="source lang-java linenums">package com.campusstore.web.client;
+
+import com.campusstore.api.dto.AddressResponse;
+import com.campusstore.api.dto.ApiResponse;
+import com.campusstore.api.dto.ContactResponse;
+import com.campusstore.api.dto.PagedResponse;
+import com.campusstore.api.dto.ProfileResponse;
+import com.campusstore.core.domain.model.ItemCondition;
+import com.campusstore.core.domain.model.Role;
+import com.campusstore.infrastructure.persistence.entity.*;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * HTTP-based REST API client. The Thymeleaf web layer NEVER calls domain services
+ * directly — every interaction goes through this adapter, which issues real HTTP calls
+ * to the application's own {@code /api/**} surface over loopback TLS. Authentication
+ * and CSRF are forwarded from the inbound request via
+ * {@link RestClientConfig#loopbackInterceptor loopbackInterceptor}.
+ *
+ * Method signatures mirror the REST contract one-for-one; each method's {@code //===}
+ * comment names the exact endpoint it calls.
+ */
+@Component
+public class InternalApiClient {
+
+    private final RestClient rest;
+
+<span class="fc" id="L39">    public InternalApiClient(RestClient internalApiRestClient) {</span>
+<span class="fc" id="L40">        this.rest = internalApiRestClient;</span>
+<span class="fc" id="L41">    }</span>
+
+    // ───────────────────────── helpers ─────────────────────────
+
+    private static &lt;T&gt; T unwrap(ApiResponse&lt;T&gt; body) {
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        if (body == null) return null;</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        if (!body.isSuccess()) {</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">            String code = body.getError() != null ? body.getError().getCode() : &quot;UNKNOWN&quot;;</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">            String msg = body.getError() != null ? body.getError().getMessage() : &quot;API error&quot;;</span>
+<span class="nc" id="L50">            throw new ApiClientException(code, msg);</span>
+        }
+<span class="nc" id="L52">        return body.getData();</span>
+    }
+
+    private &lt;T&gt; T getJson(String uri, Class&lt;T&gt; type) {
+<span class="nc" id="L56">        ApiResponse&lt;T&gt; resp = rest.get().uri(uri).retrieve()</span>
+<span class="nc" id="L57">                .body(new ParameterizedTypeReference&lt;ApiResponse&lt;T&gt;&gt;() {</span>
+<span class="nc" id="L58">                    @Override public java.lang.reflect.Type getType() { return paramType(ApiResponse.class, type); }</span>
+                });
+<span class="nc" id="L60">        return unwrap(resp);</span>
+    }
+
+    private &lt;T&gt; T getJson(String uri, ParameterizedTypeReference&lt;ApiResponse&lt;T&gt;&gt; ref) {
+<span class="nc" id="L64">        ApiResponse&lt;T&gt; resp = rest.get().uri(uri).retrieve().body(ref);</span>
+<span class="nc" id="L65">        return unwrap(resp);</span>
+    }
+
+    private &lt;T&gt; T postJson(String uri, Object body, ParameterizedTypeReference&lt;ApiResponse&lt;T&gt;&gt; ref) {
+<span class="nc" id="L69">        ApiResponse&lt;T&gt; resp = rest.post().uri(uri)</span>
+<span class="nc" id="L70">                .contentType(MediaType.APPLICATION_JSON)</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">                .body(body == null ? Map.of() : body)</span>
+<span class="nc" id="L72">                .retrieve().body(ref);</span>
+<span class="nc" id="L73">        return unwrap(resp);</span>
+    }
+
+    private &lt;T&gt; T putJson(String uri, Object body, ParameterizedTypeReference&lt;ApiResponse&lt;T&gt;&gt; ref) {
+<span class="nc" id="L77">        ApiResponse&lt;T&gt; resp = rest.put().uri(uri)</span>
+<span class="nc" id="L78">                .contentType(MediaType.APPLICATION_JSON)</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">                .body(body == null ? Map.of() : body)</span>
+<span class="nc" id="L80">                .retrieve().body(ref);</span>
+<span class="nc" id="L81">        return unwrap(resp);</span>
+    }
+
+    private void postVoid(String uri, Object body) {
+<span class="nc" id="L85">        rest.post().uri(uri)</span>
+<span class="nc" id="L86">                .contentType(MediaType.APPLICATION_JSON)</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">                .body(body == null ? Map.of() : body)</span>
+<span class="nc" id="L88">                .retrieve().toBodilessEntity();</span>
+<span class="nc" id="L89">    }</span>
+
+    private void putVoid(String uri, Object body) {
+<span class="nc" id="L92">        rest.put().uri(uri)</span>
+<span class="nc" id="L93">                .contentType(MediaType.APPLICATION_JSON)</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">                .body(body == null ? Map.of() : body)</span>
+<span class="nc" id="L95">                .retrieve().toBodilessEntity();</span>
+<span class="nc" id="L96">    }</span>
+
+    private void deleteVoid(String uri) {
+<span class="nc" id="L99">        rest.delete().uri(uri).retrieve().toBodilessEntity();</span>
+<span class="nc" id="L100">    }</span>
+
+    private static java.lang.reflect.ParameterizedType paramType(Class&lt;?&gt; raw, java.lang.reflect.Type... args) {
+<span class="nc" id="L103">        return new java.lang.reflect.ParameterizedType() {</span>
+<span class="nc" id="L104">            public java.lang.reflect.Type[] getActualTypeArguments() { return args; }</span>
+<span class="nc" id="L105">            public java.lang.reflect.Type getRawType() { return raw; }</span>
+<span class="nc" id="L106">            public java.lang.reflect.Type getOwnerType() { return null; }</span>
+        };
+    }
+
+    private static String appendPage(String path, Pageable p) {
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        char sep = path.contains(&quot;?&quot;) ? '&amp;' : '?';</span>
+<span class="fc" id="L112">        return path + sep + &quot;page=&quot; + p.getPageNumber() + &quot;&amp;size=&quot; + p.getPageSize();</span>
+    }
+
+    // ───────────────────────── inventory ─────────────────────────
+
+    public PagedResponse&lt;InventoryItemEntity&gt; listItems(Pageable pageable) {
+<span class="nc" id="L118">        return getJson(appendPage(&quot;/api/inventory&quot;, pageable),</span>
+<span class="nc" id="L119">                new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public InventoryItemEntity getItem(Long id) {
+<span class="nc" id="L123">        return getJson(&quot;/api/inventory/&quot; + id, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public InventoryItemEntity createItem(String name, String desc, String sku, Long catId, Long deptId,
+                                           Long locId, BigDecimal price, int qtyTotal,
+                                           boolean requiresApproval, Long actorId,
+                                           ItemCondition condition, LocalDate expDate) {
+<span class="nc" id="L130">        Map&lt;String, Object&gt; body = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L131">        body.put(&quot;name&quot;, name);</span>
+<span class="nc" id="L132">        body.put(&quot;description&quot;, desc);</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        body.put(&quot;sku&quot;, sku != null ? sku : (&quot;AUTO-&quot; + System.currentTimeMillis()));</span>
+<span class="nc" id="L134">        body.put(&quot;categoryId&quot;, catId);</span>
+<span class="nc" id="L135">        body.put(&quot;departmentId&quot;, deptId);</span>
+<span class="nc" id="L136">        body.put(&quot;locationId&quot;, locId);</span>
+<span class="nc" id="L137">        body.put(&quot;priceUsd&quot;, price);</span>
+<span class="nc" id="L138">        body.put(&quot;quantity&quot;, qtyTotal);</span>
+<span class="nc" id="L139">        body.put(&quot;requiresApproval&quot;, requiresApproval);</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        body.put(&quot;condition&quot;, condition != null ? condition.name() : ItemCondition.NEW.name());</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        if (expDate != null) body.put(&quot;expirationDate&quot;, expDate.toString());</span>
+<span class="nc" id="L142">        return postJson(&quot;/api/inventory&quot;, body, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public InventoryItemEntity updateItem(Long id, String name, String desc, BigDecimal price,
+                                           Integer qtyTotal, Boolean requiresApproval, Long actorId) {
+<span class="nc" id="L147">        Map&lt;String, Object&gt; body = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        if (name != null) body.put(&quot;name&quot;, name);</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">        if (desc != null) body.put(&quot;description&quot;, desc);</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (price != null) body.put(&quot;priceUsd&quot;, price);</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">        if (qtyTotal != null) body.put(&quot;quantity&quot;, qtyTotal);</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">        if (requiresApproval != null) body.put(&quot;requiresApproval&quot;, requiresApproval);</span>
+<span class="nc" id="L153">        return putJson(&quot;/api/inventory/&quot; + id, body, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public void deactivateItem(Long id, Long actorId) {
+<span class="nc" id="L157">        deleteVoid(&quot;/api/inventory/&quot; + id);</span>
+<span class="nc" id="L158">    }</span>
+
+    // ───────────────────────── search &amp; favorites ─────────────────────────
+
+    public PagedResponse&lt;InventoryItemEntity&gt; search(String keyword, Long categoryId, Long departmentId,
+                                             Long userZoneId, String sort, boolean personalized, Long userId,
+                                             Pageable pageable, BigDecimal priceMin, BigDecimal priceMax,
+                                             ItemCondition condition, Long zoneId) {
+<span class="nc" id="L166">        StringBuilder q = new StringBuilder(&quot;/api/search?page=&quot;).append(pageable.getPageNumber())</span>
+<span class="nc" id="L167">                .append(&quot;&amp;size=&quot;).append(pageable.getPageSize());</span>
+<span class="nc bnc" id="L168" title="All 4 branches missed.">        if (keyword != null &amp;&amp; !keyword.isBlank()) q.append(&quot;&amp;q=&quot;).append(urlEncode(keyword));</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">        if (categoryId != null) q.append(&quot;&amp;categoryId=&quot;).append(categoryId);</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        if (departmentId != null) q.append(&quot;&amp;departmentId=&quot;).append(departmentId);</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        if (zoneId != null) q.append(&quot;&amp;zoneId=&quot;).append(zoneId);</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        if (priceMin != null) q.append(&quot;&amp;priceMin=&quot;).append(priceMin);</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">        if (priceMax != null) q.append(&quot;&amp;priceMax=&quot;).append(priceMax);</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (condition != null) q.append(&quot;&amp;condition=&quot;).append(condition.name());</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">        if (sort != null) q.append(&quot;&amp;sort=&quot;).append(urlEncode(sort));</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">        if (personalized) q.append(&quot;&amp;personalized=true&quot;);</span>
+<span class="nc" id="L177">        return getJson(q.toString(), new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public List&lt;Map&lt;String, Object&gt;&gt; getTrendingTerms() {
+<span class="nc" id="L181">        return getJson(&quot;/api/search/trending&quot;, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public List&lt;FavoriteEntity&gt; getFavorites(Long userId) {
+<span class="nc" id="L185">        return getJson(&quot;/api/favorites&quot;, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public void addFavorite(Long userId, Long itemId) {
+<span class="nc" id="L189">        postVoid(&quot;/api/favorites/&quot; + itemId, null);</span>
+<span class="nc" id="L190">    }</span>
+
+    public void removeFavorite(Long userId, Long itemId) {
+<span class="nc" id="L193">        deleteVoid(&quot;/api/favorites/&quot; + itemId);</span>
+<span class="nc" id="L194">    }</span>
+
+    // ───────────────────────── requests ─────────────────────────
+
+    public ItemRequestEntity createRequest(Long userId, Long itemId, int qty, String justification) {
+<span class="nc" id="L199">        Map&lt;String, Object&gt; body = Map.of(</span>
+<span class="nc" id="L200">                &quot;itemId&quot;, itemId,</span>
+<span class="nc" id="L201">                &quot;quantity&quot;, qty,</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">                &quot;justification&quot;, justification != null ? justification : &quot;Requested via web UI&quot;);</span>
+<span class="nc" id="L203">        return postJson(&quot;/api/requests&quot;, body, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public void approveRequest(Long id, Long userId) {
+<span class="nc" id="L207">        putVoid(&quot;/api/requests/&quot; + id + &quot;/approve&quot;, null);</span>
+<span class="nc" id="L208">    }</span>
+
+    public void rejectRequest(Long id, Long userId, String reason) {
+<span class="nc" id="L211">        putVoid(&quot;/api/requests/&quot; + id + &quot;/reject&quot;,</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">                Map.of(&quot;reason&quot;, reason != null ? reason : &quot;Rejected&quot;));</span>
+<span class="nc" id="L213">    }</span>
+
+    public void cancelRequest(Long id, Long userId) {
+<span class="nc" id="L216">        putVoid(&quot;/api/requests/&quot; + id + &quot;/cancel&quot;, null);</span>
+<span class="nc" id="L217">    }</span>
+
+    public void markPickedUp(Long id, Long userId) {
+<span class="nc" id="L220">        putVoid(&quot;/api/requests/&quot; + id + &quot;/picked-up&quot;, null);</span>
+<span class="nc" id="L221">    }</span>
+
+    public ItemRequestEntity getRequest(Long id, Long userId) {
+<span class="nc" id="L224">        return getJson(&quot;/api/requests/&quot; + id, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public PagedResponse&lt;ItemRequestEntity&gt; listMyRequests(Long userId, Pageable p) {
+<span class="nc" id="L228">        return getJson(appendPage(&quot;/api/requests/mine&quot;, p), new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public PagedResponse&lt;ItemRequestEntity&gt; listPendingApprovals(Long userId, Pageable p) {
+<span class="nc" id="L232">        return getJson(appendPage(&quot;/api/requests/pending-approval&quot;, p),</span>
+<span class="nc" id="L233">                new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    // ───────────────────────── notifications ─────────────────────────
+
+    public PagedResponse&lt;NotificationEntity&gt; listNotifications(Long userId, Pageable p) {
+<span class="pc" id="L239">        return getJson(appendPage(&quot;/api/notifications&quot;, p),</span>
+<span class="fc" id="L240">                new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public long getUnreadCount(Long userId) {
+<span class="pc" id="L244">        Number n = getJson(&quot;/api/notifications/unread-count&quot;,</span>
+<span class="fc" id="L245">                new ParameterizedTypeReference&lt;ApiResponse&lt;Number&gt;&gt;() {});</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">        return n == null ? 0L : n.longValue();</span>
+    }
+
+    public void markRead(Long id, Long userId) {
+<span class="nc" id="L250">        putVoid(&quot;/api/notifications/&quot; + id + &quot;/read&quot;, null);</span>
+<span class="nc" id="L251">    }</span>
+
+    public void markAllRead(Long userId) {
+<span class="nc" id="L254">        putVoid(&quot;/api/notifications/read-all&quot;, null);</span>
+<span class="nc" id="L255">    }</span>
+
+    public List&lt;NotificationPreferenceEntity&gt; getNotificationPreferences(Long userId) {
+<span class="nc" id="L258">        return getJson(&quot;/api/notification-preferences&quot;, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    // ───────────────────────── profile ─────────────────────────
+
+    public ProfileResponse getProfile(Long userId) {
+<span class="nc" id="L264">        return getJson(&quot;/api/profile&quot;, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public List&lt;AddressResponse&gt; getAddresses(Long userId) {
+<span class="nc" id="L268">        return getJson(&quot;/api/profile/addresses&quot;, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public void addAddress(Long userId, String label, String street, String city, String state, String zip) {
+<span class="nc" id="L272">        Map&lt;String, Object&gt; body = Map.of(</span>
+<span class="nc" id="L273">                &quot;label&quot;, label,</span>
+<span class="nc" id="L274">                &quot;street&quot;, street,</span>
+<span class="nc" id="L275">                &quot;city&quot;, city,</span>
+<span class="nc" id="L276">                &quot;state&quot;, state,</span>
+<span class="nc" id="L277">                &quot;zipCode&quot;, zip);</span>
+<span class="nc" id="L278">        postVoid(&quot;/api/profile/addresses&quot;, body);</span>
+<span class="nc" id="L279">    }</span>
+
+    public void deleteAddress(Long userId, Long addressId) {
+<span class="nc" id="L282">        deleteVoid(&quot;/api/profile/addresses/&quot; + addressId);</span>
+<span class="nc" id="L283">    }</span>
+
+    public List&lt;String&gt; getTags(Long userId) {
+<span class="nc" id="L286">        return getJson(&quot;/api/profile/tags&quot;, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public void addTag(Long userId, String tag) {
+<span class="nc" id="L290">        postVoid(&quot;/api/profile/tags&quot;, Map.of(&quot;tag&quot;, tag));</span>
+<span class="nc" id="L291">    }</span>
+
+    public void removeTag(Long userId, String tag) {
+<span class="nc" id="L294">        deleteVoid(&quot;/api/profile/tags/&quot; + urlEncode(tag));</span>
+<span class="nc" id="L295">    }</span>
+
+    public List&lt;ContactResponse&gt; getContacts(Long userId) {
+<span class="nc" id="L298">        return getJson(&quot;/api/profile/contacts&quot;, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public void addContact(Long userId, String label, String relationship, String name,
+                             String email, String phone, String notes) {
+<span class="nc" id="L303">        Map&lt;String, Object&gt; body = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L304">        body.put(&quot;label&quot;, label);</span>
+<span class="nc bnc" id="L305" title="All 2 branches missed.">        if (relationship != null) body.put(&quot;relationship&quot;, relationship);</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">        if (name != null) body.put(&quot;name&quot;, name);</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">        if (email != null) body.put(&quot;email&quot;, email);</span>
+<span class="nc bnc" id="L308" title="All 2 branches missed.">        if (phone != null) body.put(&quot;phone&quot;, phone);</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">        if (notes != null) body.put(&quot;notes&quot;, notes);</span>
+<span class="nc" id="L310">        postVoid(&quot;/api/profile/contacts&quot;, body);</span>
+<span class="nc" id="L311">    }</span>
+
+    public void updateContact(Long userId, Long contactId, String label, String relationship,
+                                String name, String email, String phone, String notes) {
+<span class="nc" id="L315">        Map&lt;String, Object&gt; body = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L316">        body.put(&quot;label&quot;, label);</span>
+<span class="nc bnc" id="L317" title="All 2 branches missed.">        if (relationship != null) body.put(&quot;relationship&quot;, relationship);</span>
+<span class="nc bnc" id="L318" title="All 2 branches missed.">        if (name != null) body.put(&quot;name&quot;, name);</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">        if (email != null) body.put(&quot;email&quot;, email);</span>
+<span class="nc bnc" id="L320" title="All 2 branches missed.">        if (phone != null) body.put(&quot;phone&quot;, phone);</span>
+<span class="nc bnc" id="L321" title="All 2 branches missed.">        if (notes != null) body.put(&quot;notes&quot;, notes);</span>
+<span class="nc" id="L322">        putVoid(&quot;/api/profile/contacts/&quot; + contactId, body);</span>
+<span class="nc" id="L323">    }</span>
+
+    public void deleteContact(Long userId, Long contactId) {
+<span class="nc" id="L326">        deleteVoid(&quot;/api/profile/contacts/&quot; + contactId);</span>
+<span class="nc" id="L327">    }</span>
+
+    public UserPreferenceEntity getPreferences(Long userId) {
+<span class="nc" id="L330">        return getJson(&quot;/api/user/preferences&quot;, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public void updateProfile(Long userId, String displayName, String email, String phone) {
+<span class="nc" id="L334">        Map&lt;String, Object&gt; body = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L335" title="All 2 branches missed.">        if (displayName != null) body.put(&quot;displayName&quot;, displayName);</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">        if (email != null) body.put(&quot;email&quot;, email);</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">        if (phone != null) body.put(&quot;phone&quot;, phone);</span>
+<span class="nc" id="L338">        putVoid(&quot;/api/profile&quot;, body);</span>
+<span class="nc" id="L339">    }</span>
+
+    // ───────────────────────── admin ─────────────────────────
+
+    public PagedResponse&lt;UserEntity&gt; listUsers(Pageable p) {
+<span class="nc" id="L344">        return getJson(appendPage(&quot;/api/admin/users&quot;, p), new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public UserEntity getUserById(Long id) {
+<span class="nc" id="L348">        return getJson(&quot;/api/admin/users/&quot; + id, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public List&lt;CategoryEntity&gt; listCategories() {
+<span class="nc" id="L352">        return getJson(&quot;/api/categories&quot;, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public List&lt;DepartmentEntity&gt; listDepartments() {
+<span class="nc" id="L356">        return getJson(&quot;/api/admin/departments&quot;, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public List&lt;ZoneEntity&gt; listZones() {
+<span class="nc" id="L360">        return getJson(&quot;/api/admin/zones&quot;, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public PagedResponse&lt;StorageLocationEntity&gt; listLocations(Pageable p) {
+<span class="nc" id="L364">        return getJson(appendPage(&quot;/api/warehouse/locations&quot;, p),</span>
+<span class="nc" id="L365">                new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public List&lt;CrawlerJobEntity&gt; listCrawlerJobs() {
+<span class="nc" id="L369">        return getJson(&quot;/api/admin/crawler/jobs&quot;, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public byte[] exportOutbox() {
+<span class="nc" id="L373">        return rest.post().uri(&quot;/api/admin/email-outbox/export&quot;)</span>
+<span class="nc" id="L374">                .retrieve().body(byte[].class);</span>
+    }
+
+    public UserEntity createUser(String username, String password, String displayName, String email,
+                                  String phone, Role role, Long actorId) {
+<span class="nc" id="L379">        Map&lt;String, Object&gt; body = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L380">        body.put(&quot;username&quot;, username);</span>
+<span class="nc" id="L381">        body.put(&quot;password&quot;, password);</span>
+<span class="nc" id="L382">        body.put(&quot;displayName&quot;, displayName);</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">        body.put(&quot;email&quot;, email != null ? email : &quot;user@example.com&quot;);</span>
+<span class="nc bnc" id="L384" title="All 2 branches missed.">        if (phone != null) body.put(&quot;phone&quot;, phone);</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">        body.put(&quot;roles&quot;, List.of(role != null ? role.name() : Role.STUDENT.name()));</span>
+<span class="nc" id="L386">        return postJson(&quot;/api/admin/users&quot;, body, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public UserEntity updateUser(Long id, String displayName, String email, String phone,
+                                  Long departmentId, Long actorId) {
+<span class="nc" id="L391">        Map&lt;String, Object&gt; body = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L392" title="All 2 branches missed.">        if (displayName != null) body.put(&quot;displayName&quot;, displayName);</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">        if (email != null) body.put(&quot;email&quot;, email);</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">        if (phone != null) body.put(&quot;phone&quot;, phone);</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">        if (departmentId != null) body.put(&quot;departmentId&quot;, departmentId);</span>
+<span class="nc" id="L396">        return putJson(&quot;/api/admin/users/&quot; + id, body, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public void assignRole(Long userId, Role role, Long actorId) {
+<span class="nc" id="L400">        putVoid(&quot;/api/admin/users/&quot; + userId + &quot;/roles&quot;,</span>
+<span class="nc" id="L401">                Map.of(&quot;roles&quot;, List.of(role.name())));</span>
+<span class="nc" id="L402">    }</span>
+
+    public PagedResponse&lt;AuditLogEntity&gt; queryAudit(String action, String entityType, Long entityId,
+                                            Long actorUserId, Instant from, Instant to, Pageable p) {
+<span class="nc" id="L406">        StringBuilder q = new StringBuilder(&quot;/api/admin/audit?page=&quot;).append(p.getPageNumber())</span>
+<span class="nc" id="L407">                .append(&quot;&amp;size=&quot;).append(p.getPageSize());</span>
+<span class="nc bnc" id="L408" title="All 2 branches missed.">        if (action != null) q.append(&quot;&amp;action=&quot;).append(urlEncode(action));</span>
+<span class="nc bnc" id="L409" title="All 2 branches missed.">        if (entityType != null) q.append(&quot;&amp;entityType=&quot;).append(urlEncode(entityType));</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">        if (entityId != null) q.append(&quot;&amp;entityId=&quot;).append(entityId);</span>
+<span class="nc bnc" id="L411" title="All 2 branches missed.">        if (actorUserId != null) q.append(&quot;&amp;actorUserId=&quot;).append(actorUserId);</span>
+<span class="nc bnc" id="L412" title="All 2 branches missed.">        if (from != null) q.append(&quot;&amp;from=&quot;).append(from);</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">        if (to != null) q.append(&quot;&amp;to=&quot;).append(to);</span>
+<span class="nc" id="L414">        return getJson(q.toString(), new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public PagedResponse&lt;EmailOutboxEntity&gt; listOutbox(Pageable p) {
+<span class="nc" id="L418">        return getJson(appendPage(&quot;/api/admin/email-outbox&quot;, p),</span>
+<span class="nc" id="L419">                new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    // ───────────────────────── policy administration ─────────────────────────
+    // Backed by /api/admin/policies — admins manage data_retention_policy rows.
+
+    public List&lt;DataRetentionPolicyEntity&gt; listPolicies() {
+<span class="nc" id="L426">        return getJson(&quot;/api/admin/policies&quot;, new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    public DataRetentionPolicyEntity updatePolicy(String entityType, int retentionDays,
+                                                    String description) {
+<span class="nc" id="L431">        Map&lt;String, Object&gt; body = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L432">        body.put(&quot;retentionDays&quot;, retentionDays);</span>
+<span class="nc bnc" id="L433" title="All 2 branches missed.">        if (description != null) body.put(&quot;description&quot;, description);</span>
+<span class="nc" id="L434">        return putJson(&quot;/api/admin/policies/&quot; + urlEncode(entityType), body,</span>
+<span class="nc" id="L435">                new ParameterizedTypeReference&lt;&gt;() {});</span>
+    }
+
+    private static String urlEncode(String s) {
+<span class="nc" id="L439">        return java.net.URLEncoder.encode(s, java.nio.charset.StandardCharsets.UTF_8);</span>
+    }
+
+    /** Thrown when the API returns a non-success ApiResponse. */
+    public static class ApiClientException extends RuntimeException {
+        private final String code;
+        public ApiClientException(String code, String message) {
+<span class="nc" id="L446">            super(&quot;[&quot; + code + &quot;] &quot; + message);</span>
+<span class="nc" id="L447">            this.code = code;</span>
+<span class="nc" id="L448">        }</span>
+<span class="nc" id="L449">        public String getCode() { return code; }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserManagementUseCase.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CampusStore</a> &gt; <a href="index.source.html" class="el_package">com.campusstore.core.port.inbound</a> &gt; <span class="el_source">UserManagementUseCase.java</span></div><h1>UserManagementUseCase.java</h1><pre class="source lang-java linenums">package com.campusstore.core.port.inbound;
+
+import com.campusstore.core.domain.model.AccountStatus;
+import com.campusstore.core.domain.model.Role;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
+
+/**
+ * Inbound port for user administration operations.
+ */
+public interface UserManagementUseCase {
+
+    /**
+     * Create a new user account.
+     *
+     * @param command the user creation details
+     * @return the id of the newly created user
+     */
+    Long createUser(CreateUserCommand command);
+
+    /**
+     * Update an existing user's profile fields.
+     *
+     * @param id      the user id
+     * @param command the fields to update
+     */
+    void updateUser(Long id, UpdateUserCommand command);
+
+    /**
+     * Retrieve a user by id.
+     *
+     * @param id the user id
+     * @return the user view
+     */
+    UserView getUserById(Long id);
+
+    /**
+     * List users with pagination.
+     *
+     * @param pageable pagination information
+     * @return a page of user views
+     */
+    Page&lt;UserView&gt; listUsers(Pageable pageable);
+
+    /**
+     * Change a user's account status (active, disabled, blacklisted).
+     *
+     * @param id     the user id
+     * @param status the new account status
+     */
+    void changeAccountStatus(Long id, AccountStatus status);
+
+    /**
+     * Assign a role to a user.
+     *
+     * @param userId    the user id
+     * @param role      the role to assign
+     * @param grantedBy the id of the user granting the role
+     */
+    void assignRole(Long userId, Role role, Long grantedBy);
+
+    /**
+     * Revoke a role from a user.
+     *
+     * @param userId the user id
+     * @param role   the role to revoke
+     */
+    void revokeRole(Long userId, Role role);
+
+    // ── Command types ──────────────────────────────────────────────────
+
+<span class="nc" id="L75">    record CreateUserCommand(</span>
+            String username,
+            String password,
+            String displayName,
+            String email,
+            String phone,
+            List&lt;Role&gt; roles,
+            Long departmentId
+    ) {
+    }
+
+<span class="nc" id="L86">    record UpdateUserCommand(</span>
+            String displayName,
+            String email,
+            String phone,
+            Long departmentId
+    ) {
+    }
+
+    // ── View types ─────────────────────────────────────────────────────
+
+<span class="nc" id="L96">    record UserView(</span>
+            Long id,
+            String username,
+            String displayName,
+            String email,
+            String phone,
+            AccountStatus accountStatus,
+            List&lt;Role&gt; roles,
+            Long departmentId
+    ) {
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

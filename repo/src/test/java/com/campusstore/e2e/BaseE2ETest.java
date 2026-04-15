@@ -67,4 +67,31 @@ public abstract class BaseE2ETest {
             context.close();
         }
     }
+
+    /**
+     * Performs a login using the standard Thymeleaf login form at {@code /login}.
+     * After this call the page will have navigated away from /login on success,
+     * or remain on /login?error on failure.
+     */
+    protected void loginWith(String username, String password) {
+        page.navigate(BASE_URL + "/login");
+        page.locator("#username").fill(username);
+        page.locator("#password").fill(password);
+        page.locator("button[type='submit']").click();
+    }
+
+    /** Logs in as the Docker seed admin user. */
+    protected void loginAsAdmin() {
+        loginWith("admin", "admin123");
+    }
+
+    /** Logs in as a Docker seed teacher user. */
+    protected void loginAsTeacher() {
+        loginWith("teacher1", "teacher123");
+    }
+
+    /** Logs in as a Docker seed student user. */
+    protected void loginAsStudent() {
+        loginWith("student1", "student123");
+    }
 }

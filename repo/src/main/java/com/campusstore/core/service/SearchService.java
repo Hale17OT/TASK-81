@@ -38,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -267,9 +268,11 @@ public class SearchService {
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getTrendingTerms() {
-        List<Object[]> rawResults = searchLogRepository.findTrendingTerms(10);
+        Instant since = Instant.now().minus(7, ChronoUnit.DAYS);
+        List<Object[]> rawResults = searchLogRepository.findTrendingTerms(since);
         List<Map<String, Object>> trending = new ArrayList<>();
         for (Object[] row : rawResults) {
+            if (trending.size() >= 10) break;
             Map<String, Object> entry = new LinkedHashMap<>();
             entry.put("term", row[0]);
             entry.put("count", row[1]);
