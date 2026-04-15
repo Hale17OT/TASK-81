@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * E2E tests for the request workflow user journey.
@@ -74,8 +75,8 @@ class RequestWorkflowE2ETest extends BaseE2ETest {
         boolean hasCards = page.locator(".fluent-card-list--mobile").count() > 0
                 && page.locator(".fluent-card-list--mobile").first().isVisible();
 
-        assert hasTable || hasCards
-                : "My Requests should show at least one request after submission";
+        assertTrue(hasTable || hasCards,
+                "My Requests should show at least one request after submission");
 
         // Verify persisted domain state: a status badge must appear in the list
         assertThat(page.locator(".fluent-badge--status").first()).isVisible();

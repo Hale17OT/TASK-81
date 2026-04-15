@@ -7,9 +7,7 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -180,6 +178,24 @@ class WarehouseApiHttpTest extends BaseHttpApiTest {
                 "Admin must be able to update a warehouse location");
         assertTrue((Boolean) response.getBody().get("success"),
                 "Update location response must have success=true");
+
+        // Verify the field changes persisted (PUT side-effect check)
+        ResponseEntity<Map> listResp = client.get("/api/warehouse/locations", Map.class);
+        assertEquals(HttpStatus.OK, listResp.getStatusCode());
+        Map<String, Object> pageData = (Map<String, Object>) listResp.getBody().get("data");
+        List<Map<String, Object>> locations = (List<Map<String, Object>>) pageData.get("content");
+        Map<String, Object> updatedLocation = null;
+        for (Map<String, Object> loc : locations) {
+            if (locationId.equals(((Number) loc.get("id")).longValue())) {
+                updatedLocation = loc;
+                break;
+            }
+        }
+        assertNotNull(updatedLocation, "Updated location must appear in GET /api/warehouse/locations");
+        assertEquals(60, ((Number) updatedLocation.get("capacity")).intValue(),
+                "Updated location capacity must be 60 after PUT");
+        assertEquals(2, ((Number) updatedLocation.get("level")).intValue(),
+                "Updated location level must be 2 after PUT");
     }
 
     @Test

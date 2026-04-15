@@ -372,13 +372,14 @@ class ApiBusinessOutcomesTest extends BaseHttpApiTest {
 
         // Student B tries to access Student A's request — must be denied
         ResponseEntity<Map> isolationResp = studentB.get("/api/requests/" + requestId, Map.class);
-        assertNotEquals(HttpStatus.OK, isolationResp.getStatusCode(),
-                "Student B must not be able to read Student A's request");
         assertTrue(
                 isolationResp.getStatusCode() == HttpStatus.FORBIDDEN
                         || isolationResp.getStatusCode() == HttpStatus.NOT_FOUND,
                 "Expected 403 or 404 for cross-user request access, got "
                         + isolationResp.getStatusCode());
+        assertNotNull(isolationResp.getBody(), "Denied access response must include a body");
+        assertFalse((Boolean) isolationResp.getBody().get("success"),
+                "Cross-user request isolation response must have success=false");
     }
 
     // ── Notification unread count ─────────────────────────────────────────────

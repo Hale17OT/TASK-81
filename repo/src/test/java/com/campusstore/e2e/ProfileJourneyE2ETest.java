@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * E2E tests for the profile user journey.
@@ -41,8 +42,8 @@ class ProfileJourneyE2ETest extends BaseE2ETest {
 
         // The profile page shows the logged-in user's username
         String bodyText = page.locator("body").textContent();
-        assert bodyText.contains("student1") || bodyText.contains("Alex Johnson")
-                : "Profile page should show the student's username or display name";
+        assertTrue(bodyText.contains("student1") || bodyText.contains("Alex Johnson"),
+                "Profile page should show the student's username or display name");
     }
 
     @Test

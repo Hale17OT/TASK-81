@@ -4,11 +4,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -50,9 +49,9 @@ class CrawlerApiHttpTest extends BaseHttpApiTest {
     @Test
     void createCrawlerJob_asAdmin_returns200() {
         HttpClient client = adminClient();
-
+        String jobName = "Test Crawler Job " + System.currentTimeMillis();
         Map<String, Object> req = Map.of(
-                "name", "Test Crawler Job " + System.currentTimeMillis(),
+                "name", jobName,
                 "sourcePath", "/data/test-source",
                 "cronExpression", "0 0 2 * * ?",
                 "sourceType", "FILE"
@@ -62,7 +61,25 @@ class CrawlerApiHttpTest extends BaseHttpApiTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue((Boolean) response.getBody().get("success"));
         Map<String, Object> data = (Map<String, Object>) response.getBody().get("data");
-        assertNotNull(data.get("id"));
+        assertNotNull(data.get("id"), "Created job response must include an id");
+        Long createdId = ((Number) data.get("id")).longValue();
+
+        // Verify the job is retrievable with the submitted fields (POST side-effect check)
+        ResponseEntity<Map> listResp = client.get("/api/admin/crawler/jobs", Map.class);
+        assertEquals(HttpStatus.OK, listResp.getStatusCode());
+        List<Map<String, Object>> jobs = (List<Map<String, Object>>) listResp.getBody().get("data");
+        Map<String, Object> createdJob = null;
+        for (Map<String, Object> j : jobs) {
+            if (createdId.equals(((Number) j.get("id")).longValue())) {
+                createdJob = j;
+                break;
+            }
+        }
+        assertNotNull(createdJob, "Created crawler job must appear in GET /api/admin/crawler/jobs");
+        assertEquals(jobName, createdJob.get("name"),
+                "Listed job must have the submitted name");
+        assertEquals("FILE", createdJob.get("sourceType"),
+                "Listed job must have the submitted sourceType");
     }
 
     @Test
@@ -98,8 +115,9 @@ class CrawlerApiHttpTest extends BaseHttpApiTest {
         assertEquals(HttpStatus.OK, createResp.getStatusCode());
         Long jobId = ((Number) ((Map<String, Object>) createResp.getBody().get("data")).get("id")).longValue();
 
+        String updatedName = "Updated Job " + System.currentTimeMillis();
         Map<String, Object> updateReq = Map.of(
-                "name", "Updated Job " + System.currentTimeMillis(),
+                "name", updatedName,
                 "sourcePath", "/data/updated-source",
                 "cronExpression", "0 0 4 * * ?",
                 "sourceType", "FILE"
@@ -110,6 +128,21 @@ class CrawlerApiHttpTest extends BaseHttpApiTest {
                 "Admin must be able to update a crawler job");
         assertTrue((Boolean) response.getBody().get("success"),
                 "Update crawler job response must have success=true");
+
+        // Verify the name change persisted (PUT side-effect check)
+        ResponseEntity<Map> listResp = client.get("/api/admin/crawler/jobs", Map.class);
+        assertEquals(HttpStatus.OK, listResp.getStatusCode());
+        List<Map<String, Object>> jobs = (List<Map<String, Object>>) listResp.getBody().get("data");
+        Map<String, Object> updatedJob = null;
+        for (Map<String, Object> j : jobs) {
+            if (jobId.equals(((Number) j.get("id")).longValue())) {
+                updatedJob = j;
+                break;
+            }
+        }
+        assertNotNull(updatedJob, "Updated crawler job must appear in GET /api/admin/crawler/jobs");
+        assertEquals(updatedName, updatedJob.get("name"),
+                "Job name must reflect the PUT update in the job list");
     }
 
     @Test

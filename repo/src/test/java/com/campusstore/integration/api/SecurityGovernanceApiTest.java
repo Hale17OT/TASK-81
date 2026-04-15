@@ -222,11 +222,10 @@ class SecurityGovernanceApiTest extends BaseHttpApiTest {
         // or assignment-mismatch check: admin is the designated approver, not the teacher)
         ResponseEntity<Map> teacherApproveResp = teacher.put(
                 "/api/requests/" + requestId + "/approve", null, Map.class);
-        assertNotEquals(HttpStatus.OK, teacherApproveResp.getStatusCode(),
-                "Teacher must not be able to approve their own request");
-        assertTrue(teacherApproveResp.getStatusCode().is4xxClientError(),
-                "Teacher self-approval block must return a 4xx status, got: "
-                        + teacherApproveResp.getStatusCode());
+        assertEquals(HttpStatus.FORBIDDEN, teacherApproveResp.getStatusCode(),
+                "Teacher self-approval block must return 403 Forbidden");
+        assertFalse((Boolean) teacherApproveResp.getBody().get("success"),
+                "Self-approval rejection must have success=false in response body");
 
         // Admin approves the same request — must succeed, proving the request is valid
         // and only the teacher was blocked (not a broken endpoint)
@@ -331,11 +330,10 @@ class SecurityGovernanceApiTest extends BaseHttpApiTest {
         // Student B tries to cancel Student A's request
         ResponseEntity<Map> cancelResp = studentB.put(
                 "/api/requests/" + requestId + "/cancel", Map.of(), Map.class);
-        assertNotEquals(HttpStatus.OK, cancelResp.getStatusCode(),
-                "Student B must not be able to cancel Student A's request");
-        assertTrue(cancelResp.getStatusCode().is4xxClientError(),
-                "Cross-user cancel attempt must return a 4xx status, got: "
-                        + cancelResp.getStatusCode());
+        assertEquals(HttpStatus.FORBIDDEN, cancelResp.getStatusCode(),
+                "Cross-user cancel attempt must return 403 Forbidden");
+        assertFalse((Boolean) cancelResp.getBody().get("success"),
+                "Cross-user cancel rejection must have success=false in response body");
     }
 
     // ── Role boundary enforcement ─────────────────────────────────────────────
@@ -425,10 +423,12 @@ class SecurityGovernanceApiTest extends BaseHttpApiTest {
                 Map.of("oldPassword", "CompletlyWrong999!",
                         "newPassword", "ShouldNotWork123!"),
                 Map.class);
-        assertNotEquals(HttpStatus.OK, resp.getStatusCode(),
-                "Password change with wrong old password must not succeed");
-        assertTrue(resp.getStatusCode().is4xxClientError(),
-                "Wrong old password should be a 4xx error, got: " + resp.getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, resp.getStatusCode(),
+                "Wrong old password must return 400 Bad Request");
+        assertFalse((Boolean) resp.getBody().get("success"),
+                "Wrong old password response must have success=false");
+        assertNotNull(resp.getBody().get("error"),
+                "Wrong old password response must include an error field");
     }
 
     @Test

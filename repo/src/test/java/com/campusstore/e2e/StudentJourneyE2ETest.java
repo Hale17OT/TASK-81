@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * E2E tests for the student user journey.
@@ -83,7 +84,7 @@ class StudentJourneyE2ETest extends BaseE2ETest {
                 || bodyText.contains("403")
                 || bodyText.contains("Forbidden")
                 || bodyText.contains("Access Denied");
-        assert isForbiddenPage : "Student should not be able to access admin pages, got URL: " + page.url();
+        assertTrue(isForbiddenPage, "Student should not be able to access admin pages, got URL: " + page.url());
     }
 
     @Test

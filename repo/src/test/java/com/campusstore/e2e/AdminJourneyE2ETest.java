@@ -107,4 +107,23 @@ class AdminJourneyE2ETest extends BaseE2ETest {
         // Admin quick action card for Admin Dashboard should be present
         assertThat(page.locator(".fluent-section--actions")).isVisible();
     }
+
+    @Test
+    void admin_inventoryPage_showsSeededArduinoItem() {
+        page.navigate(BASE_URL + "/admin/inventory");
+
+        // DB-seeded "Arduino Uno R3 Board" must appear in the inventory list,
+        // confirming the page rendered real inventory data from the DB (not an empty template).
+        assertThat(page.locator("body")).containsText("Arduino");
+        assertThat(page.locator("body")).containsText("24.99");
+    }
+
+    @Test
+    void admin_usersPage_showsSeededStudentUser() {
+        page.navigate(BASE_URL + "/admin/users");
+
+        // DB-seeded "student1" must appear in the user list,
+        // confirming the page rendered real user data from the DB.
+        assertThat(page.locator("body")).containsText("student1");
+    }
 }

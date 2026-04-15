@@ -62,4 +62,40 @@ class NotificationJourneyE2ETest extends BaseE2ETest {
         assertThat(page).hasURL(Pattern.compile(".*/notifications.*"));
         assertThat(page.locator("body")).isVisible();
     }
+
+    @Test
+    void notifications_center_rendersNotificationHeading() {
+        loginAsStudent();
+        page.navigate(BASE_URL + "/notifications");
+
+        // Notification center must render its heading (from Thymeleaf template),
+        // confirming the template resolved and did not return a blank or error page.
+        assertThat(page.locator("body")).not().containsText("Whitelabel Error");
+        assertThat(page.locator("body")).not().containsText("500");
+        assertThat(page.locator("body")).containsText("Notification");
+    }
+
+    @Test
+    void requestForm_forSeededItem_showsItemNameFromDb() {
+        // Navigate to the request form for item 1 (Arduino Uno R3 Board) as a student.
+        // Verifies that the Thymeleaf template renders live DB inventory data —
+        // the item name must appear in the form, confirming a UI→DB round-trip.
+        loginAsStudent();
+        page.navigate(BASE_URL + "/requests/new/1");
+
+        assertThat(page.locator("body")).not().containsText("Whitelabel Error");
+        assertThat(page.locator("body")).containsText("Arduino");
+    }
+
+    @Test
+    void myRequests_asStudent_pageRendersRequestSection() {
+        loginAsStudent();
+        page.navigate(BASE_URL + "/requests/mine");
+
+        assertThat(page).hasURL(Pattern.compile(".*/requests/mine.*"));
+        assertThat(page.locator("body")).not().containsText("Whitelabel Error");
+        // The page must contain the word "Request" — either from section headings
+        // or from actual request rows, confirming the template resolved correctly.
+        assertThat(page.locator("body")).containsText("Request");
+    }
 }
