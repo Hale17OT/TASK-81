@@ -1,0 +1,5 @@
+# Ignore generated HTML report files — only keep machine-readable artifacts
+*
+!.gitignore
+!jacoco.xml
+!jacoco.csv
