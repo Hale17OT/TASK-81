@@ -60,9 +60,9 @@ class UserManagementServiceTest {
     void createUser_validInput_encryptsCredentials() {
         when(userRepository.existsByUsername("bob")).thenReturn(false);
         when(passwordEncoder.encode("Pass123!")).thenReturn("$2a$bcrypt");
-        when(aesEncryptionService.encrypt("$2a$bcrypt")).thenReturn("enc_hash");
-        when(aesEncryptionService.encrypt("bob@test.com")).thenReturn("enc_email");
-        when(aesEncryptionService.encrypt("5550001234")).thenReturn("enc_phone");
+        when(aesEncryptionService.encrypt("$2a$bcrypt")).thenReturn("enc_hash".getBytes());
+        when(aesEncryptionService.encrypt("bob@test.com")).thenReturn("enc_email".getBytes());
+        when(aesEncryptionService.encrypt("5550001234")).thenReturn("enc_phone".getBytes());
         UserEntity saved = new UserEntity();
         saved.setId(10L);
         saved.setUsername("bob");
@@ -83,7 +83,7 @@ class UserManagementServiceTest {
     void createUser_withRole_assignsRoleRecord() {
         when(userRepository.existsByUsername("charlie")).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("$2a$hash");
-        when(aesEncryptionService.encrypt(anyString())).thenReturn("enc");
+        when(aesEncryptionService.encrypt(anyString())).thenReturn("enc".getBytes());
         UserEntity saved = new UserEntity();
         saved.setId(20L);
         saved.setUsername("charlie");
