@@ -105,6 +105,57 @@ class RequestApiHttpTest extends BaseHttpApiTest {
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
     }
 
+    @Test
+    void rejectRequest_asAdmin_succeeds_withReasonPersisted() {
+        HttpClient admin = adminClient();
+        HttpClient student = studentClient();
+
+        // Create item with requiresApproval=true — request stays PENDING_APPROVAL for rejection
+        String ts = String.valueOf(System.currentTimeMillis());
+        Map<String, Object> itemReq = new java.util.HashMap<>();
+        itemReq.put("name", "Reject Test Item " + ts);
+        itemReq.put("sku", "REJ-SKU-" + ts);
+        itemReq.put("categoryId", 1);
+        itemReq.put("departmentId", 1);
+        itemReq.put("priceUsd", 3.00);
+        itemReq.put("quantity", 5);
+        itemReq.put("requiresApproval", true);
+        itemReq.put("condition", "NEW");
+        ResponseEntity<Map> itemResp = admin.post("/api/inventory", itemReq, Map.class);
+        assertEquals(HttpStatus.OK, itemResp.getStatusCode());
+        Long itemId = ((Number) ((Map<String, Object>) itemResp.getBody().get("data")).get("id")).longValue();
+
+        // Student submits a request → lands in PENDING_APPROVAL
+        Map<String, Object> requestBody = new java.util.HashMap<>();
+        requestBody.put("itemId", itemId);
+        requestBody.put("quantity", 1);
+        requestBody.put("justification", "Reject endpoint test");
+        ResponseEntity<Map> createResp = student.post("/api/requests", requestBody, Map.class);
+        assertEquals(HttpStatus.OK, createResp.getStatusCode(),
+                "Student request creation must succeed for reject-test setup");
+        Long requestId = ((Number) ((Map<String, Object>) createResp.getBody().get("data")).get("id")).longValue();
+
+        // Admin rejects the request with a reason
+        ResponseEntity<Map> rejectResp = admin.put(
+                "/api/requests/" + requestId + "/reject",
+                Map.of("reason", "Out of stock for this semester"),
+                Map.class);
+        assertEquals(HttpStatus.OK, rejectResp.getStatusCode(),
+                "Admin must be able to reject a PENDING_APPROVAL request");
+        assertTrue((Boolean) rejectResp.getBody().get("success"),
+                "Reject response must have success=true");
+
+        // Verify persisted state: read back via admin and assert REJECTED status + reason
+        ResponseEntity<Map> getResp = admin.get("/api/requests/" + requestId, Map.class);
+        assertEquals(HttpStatus.OK, getResp.getStatusCode(),
+                "GET request after rejection must succeed for admin");
+        Map<String, Object> data = (Map<String, Object>) getResp.getBody().get("data");
+        assertEquals("REJECTED", data.get("status"),
+                "Request status must be REJECTED after admin rejection");
+        assertEquals("Out of stock for this semester", data.get("rejectionReason"),
+                "Rejection reason must be persisted and returned in the response");
+    }
+
     // ── PUT /api/requests/{id}/cancel ───────────────────────────────
     @Test
     void cancelRequest_unauthenticated_returns401() {

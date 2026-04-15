@@ -20,6 +20,7 @@ class DepartmentApiHttpTest extends BaseHttpApiTest {
         ResponseEntity<Map> response = client.get("/api/admin/departments", Map.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue((Boolean) response.getBody().get("success"));
+        assertNotNull(response.getBody().get("data"), "Department list data must not be null");
     }
 
     @Test
@@ -41,9 +42,9 @@ class DepartmentApiHttpTest extends BaseHttpApiTest {
     @Test
     void createDepartment_asAdmin_returns200() {
         HttpClient client = adminClient();
-
+        String deptName = "New Dept " + System.currentTimeMillis();
         Map<String, Object> req = Map.of(
-                "name", "New Dept " + System.currentTimeMillis(),
+                "name", deptName,
                 "description", "A department created by test"
         );
         ResponseEntity<Map> response = client.post(
@@ -51,7 +52,9 @@ class DepartmentApiHttpTest extends BaseHttpApiTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue((Boolean) response.getBody().get("success"));
         Map<String, Object> data = (Map<String, Object>) response.getBody().get("data");
-        assertNotNull(data.get("id"));
+        assertNotNull(data.get("id"), "Created department must have an id");
+        assertEquals(deptName, data.get("name"),
+                "Response must echo the submitted department name");
     }
 
     @Test

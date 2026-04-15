@@ -1,5 +1,7 @@
 # CampusStore — Inventory & Marketplace Operations Platform
 
+**Type: Fullstack** — Spring Boot REST API backend + Thymeleaf server-rendered web interface, backed by MySQL, fully containerized with Docker Compose.
+
 An offline, on-premises marketplace and stockroom workflow platform for school communities with strong governance, role-based access, and intelligent warehouse operations.
 
 ## Overview
@@ -20,20 +22,41 @@ CampusStore enables a school community to run a managed inventory marketplace en
 
 ## Prerequisites
 
-- Docker & Docker Compose (v2+)
-- (Optional for local development) Java 17+, Maven 3.9+
+- Docker & Docker Compose (**required** — all runtime components are containerized)
+- (Optional, for local development only) Java 17+, Maven 3.9+
 
 ## Quick Start
 
 ```bash
 MASTER_KEY_PASSPHRASE=YourSecurePassphrase2026 \
 SERVER_SSL_KEY_STORE_PASSWORD=changeit \
-docker compose up --build
+docker-compose up --build
 ```
 
 The application will be available at **https://localhost:8443**
 
 > The TLS certificate is self-signed. Your browser will show a security warning — proceed to accept it.
+
+## Verify System Is Running
+
+After startup, confirm the application is healthy with these checks:
+
+```bash
+# 1. Health endpoint — should return {"status":"UP",...}
+curl -k https://localhost:8443/actuator/health
+
+# 2. Login and get session cookie
+curl -k -c /tmp/campus.jar -X POST https://localhost:8443/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+# Expected: {"success":true,"data":{"username":"admin","roles":["ADMIN"],...}}
+
+# 3. List inventory (authenticated)
+curl -k -b /tmp/campus.jar https://localhost:8443/api/inventory
+# Expected: {"success":true,"data":{"content":[{"id":1,"name":"Arduino Uno R3 Board",...}],...}}
+```
+
+**UI verification**: Navigate to `https://localhost:8443` — you should be redirected to `/login`. Log in as `admin` / `admin123` to reach the admin dashboard.
 
 ## Default Users
 
@@ -60,6 +83,10 @@ When running with `@ActiveProfiles("test")` (H2 in-memory database), the `TestDa
 ## Testing
 
 ```bash
+# Fully containerized — no local Java/Maven required (recommended)
+./run_tests.sh --docker
+
+# Host JVM path (requires Java 17+ and Maven; auto-detects if Java absent and falls back to --docker)
 ./run_tests.sh
 ```
 
@@ -68,7 +95,7 @@ This unified script runs:
 2. **Integration tests** — HTTP black-box API tests against real endpoints (no mocks)
 3. **E2E tests** — Browser flows with Playwright against Docker environment
 
-To run tests individually:
+To run tests individually (requires local Java 17+):
 ```bash
 # Unit tests only
 ./mvnw test -Dtest.tags.included=unit
@@ -159,6 +186,8 @@ src/main/java/com/campusstore/
 | PUT | `/api/requests/{id}/approve` | Teacher/Admin |
 | PUT | `/api/requests/{id}/reject` | Teacher/Admin |
 | PUT | `/api/requests/{id}/cancel` | Owner/Admin |
+| PUT | `/api/requests/{id}/start-picking` | Admin |
+| PUT | `/api/requests/{id}/ready-for-pickup` | Admin |
 | PUT | `/api/requests/{id}/picked-up` | Admin |
 
 ### Notifications
@@ -172,27 +201,46 @@ src/main/java/com/campusstore/
 ### Profile & Preferences
 | Method | Endpoint | Access |
 |--------|----------|--------|
-| GET/PUT | `/api/profile` | Auth |
-| GET/POST/PUT/DELETE | `/api/profile/addresses` | Auth |
-| GET/POST/DELETE | `/api/profile/tags` | Auth |
+| GET | `/api/profile` | Auth |
+| PUT | `/api/profile` | Auth |
+| GET | `/api/profile/addresses` | Auth |
+| POST | `/api/profile/addresses` | Auth |
+| PUT | `/api/profile/addresses/{id}` | Auth |
+| DELETE | `/api/profile/addresses/{id}` | Auth |
+| GET | `/api/profile/tags` | Auth |
+| POST | `/api/profile/tags` | Auth |
+| DELETE | `/api/profile/tags/{tag}` | Auth |
+| GET | `/api/profile/contacts` | Auth |
+| POST | `/api/profile/contacts` | Auth |
+| PUT | `/api/profile/contacts/{id}` | Auth |
+| DELETE | `/api/profile/contacts/{id}` | Auth |
 | GET | `/api/user/preferences` | Auth |
 | PUT | `/api/user/preferences/dnd` | Auth |
 | PUT | `/api/user/preferences/personalization` | Auth |
-| GET/PUT | `/api/notification-preferences` | Auth |
+| GET | `/api/notification-preferences` | Auth |
+| PUT | `/api/notification-preferences` | Auth |
 
 ### Admin
 | Method | Endpoint | Access |
 |--------|----------|--------|
-| GET/POST | `/api/admin/users` | Admin |
-| GET/PUT | `/api/admin/users/{id}` | Admin |
+| GET | `/api/admin/users` | Admin |
+| POST | `/api/admin/users` | Admin |
+| GET | `/api/admin/users/{id}` | Admin |
+| PUT | `/api/admin/users/{id}` | Admin |
 | PUT | `/api/admin/users/{id}/status` | Admin |
 | PUT | `/api/admin/users/{id}/roles` | Admin |
-| GET/POST | `/api/admin/departments` | Admin |
-| GET/POST | `/api/admin/categories` | Admin |
-| GET/POST | `/api/admin/zones` | Admin |
+| GET | `/api/admin/departments` | Admin |
+| POST | `/api/admin/departments` | Admin |
+| GET | `/api/admin/categories` | Admin |
+| POST | `/api/admin/categories` | Admin |
+| GET | `/api/admin/zones` | Admin |
+| POST | `/api/admin/zones` | Admin |
 | POST | `/api/admin/zones/distances` | Admin |
+| GET | `/api/admin/policies` | Admin |
+| PUT | `/api/admin/policies/{entityType}` | Admin |
 | GET | `/api/admin/audit` | Admin |
-| GET/POST | `/api/admin/email-outbox` | Admin |
+| GET | `/api/admin/email-outbox` | Admin |
+| POST | `/api/admin/email-outbox/export` | Admin |
 
 ### Warehouse
 | Method | Endpoint | Access |

@@ -124,4 +124,37 @@ class InventoryApiHttpTest extends BaseHttpApiTest {
         ResponseEntity<Map> response = client.delete("/api/inventory/1", Map.class);
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
     }
+
+    @Test
+    void deleteItem_asAdmin_deactivatesItem() {
+        HttpClient client = adminClient();
+
+        // Create a fresh item to delete so we don't affect seeded data used by other tests
+        String ts = String.valueOf(System.currentTimeMillis());
+        Map<String, Object> req = new HashMap<>();
+        req.put("name", "Delete Test Item " + ts);
+        req.put("description", "Created for deletion test");
+        req.put("sku", "DEL-SKU-" + ts);
+        req.put("categoryId", 1);
+        req.put("departmentId", 1);
+        req.put("priceUsd", 1.00);
+        req.put("quantity", 1);
+        req.put("requiresApproval", false);
+        req.put("condition", "NEW");
+        ResponseEntity<Map> createResp = client.post("/api/inventory", req, Map.class);
+        assertEquals(HttpStatus.OK, createResp.getStatusCode());
+        Long itemId = ((Number) ((Map<String, Object>) createResp.getBody().get("data")).get("id")).longValue();
+
+        // Admin deletes the item
+        ResponseEntity<Map> deleteResp = client.delete("/api/inventory/" + itemId, Map.class);
+        assertEquals(HttpStatus.OK, deleteResp.getStatusCode(),
+                "Admin must be able to delete an inventory item");
+        assertTrue((Boolean) deleteResp.getBody().get("success"),
+                "Delete response must have success=true");
+
+        // Verify deactivation: service throws ResourceNotFoundException for inactive items → 404
+        ResponseEntity<Map> getResp = client.get("/api/inventory/" + itemId, Map.class);
+        assertEquals(HttpStatus.NOT_FOUND, getResp.getStatusCode(),
+                "Deleted (deactivated) item must return 404 — inactive items are not accessible");
+    }
 }

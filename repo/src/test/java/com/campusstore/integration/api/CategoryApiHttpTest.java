@@ -20,6 +20,7 @@ class CategoryApiHttpTest extends BaseHttpApiTest {
         ResponseEntity<Map> response = client.get("/api/admin/categories", Map.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue((Boolean) response.getBody().get("success"));
+        assertNotNull(response.getBody().get("data"), "Category list data must not be null");
     }
 
     @Test
@@ -41,9 +42,9 @@ class CategoryApiHttpTest extends BaseHttpApiTest {
     @Test
     void createCategory_asAdmin_returns200() {
         HttpClient client = adminClient();
-
+        String categoryName = "New Category " + System.currentTimeMillis();
         Map<String, Object> req = Map.of(
-                "name", "New Category " + System.currentTimeMillis(),
+                "name", categoryName,
                 "description", "A category created by test"
         );
         ResponseEntity<Map> response = client.post(
@@ -51,7 +52,9 @@ class CategoryApiHttpTest extends BaseHttpApiTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue((Boolean) response.getBody().get("success"));
         Map<String, Object> data = (Map<String, Object>) response.getBody().get("data");
-        assertNotNull(data.get("id"));
+        assertNotNull(data.get("id"), "Created category must have an id");
+        assertEquals(categoryName, data.get("name"),
+                "Response must echo the submitted category name");
     }
 
     @Test
