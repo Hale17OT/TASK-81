@@ -17,15 +17,11 @@ class UserPrefApiHttpTest extends BaseHttpApiTest {
     @Test
     void getUserPreferences_authenticated_returns200() {
         HttpClient client = studentClient();
-        // UserPreferenceEntity may contain a lazy user proxy; use String to
-        // tolerate potential serialization errors.
-        ResponseEntity<String> response = client.get(
-                "/api/user/preferences", String.class);
-        // Accept 200 (no lazy issues) or 500 (serialization); never 401/403.
-        assertTrue(
-                response.getStatusCode() != HttpStatus.UNAUTHORIZED
-                        && response.getStatusCode() != HttpStatus.FORBIDDEN,
-                "Authenticated user should not get 401/403 but got " + response.getStatusCode());
+        ResponseEntity<Map> response = client.get("/api/user/preferences", Map.class);
+        assertEquals(HttpStatus.OK, response.getStatusCode(),
+                "Authenticated user must get 200 from preferences endpoint");
+        assertTrue((Boolean) response.getBody().get("success"),
+                "Preferences response must have success=true");
     }
 
     @Test

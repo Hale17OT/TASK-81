@@ -74,8 +74,35 @@ class SearchJourneyE2ETest extends BaseE2ETest {
         page.navigate(BASE_URL + "/search?keyword=Arduino");
 
         assertThat(page.locator("body")).isVisible();
-        // The page should render without errors
         assertThat(page.locator("body")).not().containsText("Whitelabel Error");
+        // The DB-seeded "Arduino Uno R3 Board" must appear in results,
+        // confirming the search rendered real inventory data from the DB.
+        assertThat(page.locator("body")).containsText("Arduino");
+    }
+
+    @Test
+    void search_withKnownItem_showsItemCardWithPrice() {
+        loginAsStudent();
+        page.navigate(BASE_URL + "/search?keyword=Arduino");
+
+        assertThat(page.locator("body")).isVisible();
+        // Item name appears in a result card/row
+        assertThat(page.locator("body")).containsText("Arduino");
+        // Price is rendered (Arduino Uno R3 Board costs $24.99)
+        assertThat(page.locator("body")).containsText("24.99");
+    }
+
+    @Test
+    void search_submitKeyword_resultsContainMatchingItem() {
+        loginAsStudent();
+        page.navigate(BASE_URL + "/search");
+
+        page.locator("#search-input").fill("Arduino");
+        page.locator("button.fluent-search__submit").click();
+
+        assertThat(page).hasURL(java.util.regex.Pattern.compile(".*/search.*[Aa]rduino.*|.*[Kk]eyword.*[Aa]rduino.*"));
+        // The known item must appear in the rendered results list
+        assertThat(page.locator("body")).containsText("Arduino");
     }
 
     @Test

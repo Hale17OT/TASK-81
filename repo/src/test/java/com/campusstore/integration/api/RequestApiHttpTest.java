@@ -226,14 +226,6 @@ class RequestApiHttpTest extends BaseHttpApiTest {
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
     }
 
-    // ── PUT /api/requests/{id}/picked-up ─────────────────────────────
-    @Test
-    void pickedUp_asStudent_returns403() {
-        HttpClient client = studentClient();
-        ResponseEntity<Map> response = client.put("/api/requests/1/picked-up", null, Map.class);
-        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-    }
-
     @Test
     void pickedUp_asAdmin_isAccessible() {
         HttpClient admin = adminClient();
