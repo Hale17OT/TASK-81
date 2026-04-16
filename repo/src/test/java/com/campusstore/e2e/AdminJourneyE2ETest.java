@@ -28,12 +28,14 @@ class AdminJourneyE2ETest extends BaseE2ETest {
     void admin_navShowsAllAdminLinks() {
         page.navigate(BASE_URL + "/");
 
-        assertThat(page.locator("a[href*='/admin/inventory']")).isVisible();
-        assertThat(page.locator("a[href*='/admin/users']")).isVisible();
-        assertThat(page.locator("a[href*='/admin/warehouse']")).isVisible();
-        assertThat(page.locator("a[href*='/admin/crawler']")).isVisible();
-        assertThat(page.locator("a[href*='/admin/audit']")).isVisible();
-        assertThat(page.locator("a[href*='/admin/policies']")).isVisible();
+        // Scope to the nav to avoid strict-mode violations from home-page quick-action cards
+        // that carry the same hrefs.
+        assertThat(page.locator(".fluent-nav a[href*='/admin/inventory']")).isVisible();
+        assertThat(page.locator(".fluent-nav a[href*='/admin/users']")).isVisible();
+        assertThat(page.locator(".fluent-nav a[href*='/admin/warehouse']")).isVisible();
+        assertThat(page.locator(".fluent-nav a[href*='/admin/crawler']")).isVisible();
+        assertThat(page.locator(".fluent-nav a[href*='/admin/audit']")).isVisible();
+        assertThat(page.locator(".fluent-nav a[href*='/admin/policies']")).isVisible();
     }
 
     @Test

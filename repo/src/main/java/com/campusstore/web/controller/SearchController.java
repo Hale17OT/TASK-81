@@ -3,6 +3,7 @@ package com.campusstore.web.controller;
 import com.campusstore.api.dto.PagedResponse;
 import com.campusstore.core.domain.model.ItemCondition;
 import com.campusstore.infrastructure.persistence.entity.InventoryItemEntity;
+import com.campusstore.infrastructure.persistence.entity.ZoneEntity;
 import com.campusstore.infrastructure.security.service.CampusUserPrincipal;
 import com.campusstore.web.client.InternalApiClient;
 
@@ -81,7 +82,13 @@ public class SearchController {
 
         // Populate filter dropdown data
         model.addAttribute("categories", apiClient.listCategories());
-        model.addAttribute("zones", apiClient.listZones());
+        List<ZoneEntity> zones;
+        try {
+            zones = apiClient.listZones();
+        } catch (Exception e) {
+            zones = List.of();
+        }
+        model.addAttribute("zones", zones);
         model.addAttribute("conditions", ItemCondition.values());
 
         return "home/search";

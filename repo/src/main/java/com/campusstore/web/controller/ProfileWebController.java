@@ -223,7 +223,7 @@ public class ProfileWebController {
                                 @RequestParam(required = false) String email,
                                 @RequestParam(required = false) String phone,
                                 RedirectAttributes redirectAttributes) {
-        apiClient.updateProfile(principal.getUserId(), displayName, email, phone);
+        apiClient.updateProfile(principal.getUserId(), blankToNull(displayName), blankToNull(email), blankToNull(phone));
         redirectAttributes.addFlashAttribute("successMessage", "Profile updated");
         return "redirect:/profile";
     }

@@ -7,7 +7,10 @@ import com.campusstore.infrastructure.persistence.repository.UserRepository;
 import com.campusstore.infrastructure.security.encryption.AesEncryptionService;
 import com.campusstore.infrastructure.security.service.CampusUserPrincipal;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,7 +55,8 @@ public class ChangePasswordWebController {
                           @RequestParam String oldPassword,
                           @RequestParam String newPassword,
                           @RequestParam String confirmPassword,
-                          RedirectAttributes redirect) {
+                          RedirectAttributes redirect,
+                          HttpServletRequest request) {
         if (principal == null) {
             return "redirect:/login";
         }
@@ -78,9 +82,16 @@ public class ChangePasswordWebController {
         user.setPasswordChangeRequired(false);
         userRepository.save(user);
 
-        redirect.addFlashAttribute("successMessage",
-                "Password updated. Please sign in again with your new password.");
-        // Force re-auth with the new password so the principal reflects the cleared flag.
-        return "redirect:/logout";
+        // Invalidate the session so the stale in-memory principal (passwordChangeRequired=true)
+        // is discarded. The transaction commits on method return, so the next login reads the
+        // updated DB value and ForcePasswordChangeInterceptor will not intercept again.
+        // Flash attributes cannot survive session invalidation, so use the standard
+        // Spring Security ?logout param which renders the success banner on the login page.
+        SecurityContextHolder.clearContext();
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        return "redirect:/login?logout=true";
     }
 }

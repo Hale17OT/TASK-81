@@ -65,4 +65,8 @@ public class PagedResponse<T> {
     /** Template convenience — true when a previous page exists. */
     @com.fasterxml.jackson.annotation.JsonIgnore
     public boolean isHasPrevious() { return page > 0; }
+
+    /** Template convenience — true when content is non-empty. Matches Spring {@code Page#hasContent()}. */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public boolean hasContent() { return content != null && !content.isEmpty(); }
 }

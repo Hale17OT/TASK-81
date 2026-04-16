@@ -2,7 +2,6 @@ package com.campusstore.infrastructure.persistence.entity;
 
 import com.campusstore.core.domain.model.RequestStatus;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -178,7 +177,6 @@ public class ItemRequestEntity {
         this.updatedAt = updatedAt;
     }
 
-    @JsonIgnore
     public UserEntity getRequester() {
         return requester;
     }
@@ -187,7 +185,6 @@ public class ItemRequestEntity {
         this.requester = requester;
     }
 
-    @JsonIgnore
     public InventoryItemEntity getItem() {
         return item;
     }
@@ -196,7 +193,6 @@ public class ItemRequestEntity {
         this.item = item;
     }
 
-    @JsonIgnore
     public UserEntity getApprover() {
         return approver;
     }

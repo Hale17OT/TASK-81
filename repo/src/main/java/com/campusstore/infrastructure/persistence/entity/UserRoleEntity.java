@@ -82,6 +82,7 @@ public class UserRoleEntity {
         this.grantedBy = grantedBy;
     }
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public UserEntity getUser() {
         return user;
     }

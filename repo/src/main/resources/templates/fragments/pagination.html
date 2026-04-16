@@ -5,7 +5,7 @@
 <nav th:fragment="pagination(page, baseUrl)" class="fluent-pagination" aria-label="Page navigation"
      th:if="${page.totalPages > 1}">
     <div class="fluent-pagination__info">
-        <span th:text="'Showing ' + ${page.number * page.size + 1} + '-' + ${T(Math).min((page.number + 1) * page.size, page.totalElements)} + ' of ' + ${page.totalElements}">
+        <span th:text="'Showing ' + ${page.number * page.size + 1} + '-' + ${(page.number + 1) * page.size > page.totalElements ? page.totalElements : (page.number + 1) * page.size} + ' of ' + ${page.totalElements}">
             Showing 1-10 of 100
         </span>
     </div>

@@ -36,7 +36,7 @@ public class DepartmentController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Map<String, Long>>> createDepartment(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createDepartment(
             @AuthenticationPrincipal CampusUserPrincipal principal,
             @Valid @RequestBody CreateDepartmentRequest request) {
         DepartmentEntity created = departmentService.create(
@@ -44,6 +44,6 @@ public class DepartmentController {
                 request.getDescription(),
                 principal != null ? principal.getUserId() : null
         );
-        return ResponseEntity.ok(ApiResponse.success(Map.of("id", created.getId())));
+        return ResponseEntity.ok(ApiResponse.success(Map.of("id", created.getId(), "name", created.getName())));
     }
 }

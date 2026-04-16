@@ -35,7 +35,8 @@ import java.util.Set;
 public class SeedDataInitializer implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(SeedDataInitializer.class);
-    private static final String BCRYPT_PREFIX = "$2a$";
+    private static final String BCRYPT_PREFIX_2A = "$2a$";
+    private static final String BCRYPT_PREFIX_2B = "$2b$";
 
     /**
      * Profiles in which the automatic bootstrap-password <em>generator</em> may run.
@@ -70,7 +71,7 @@ public class SeedDataInitializer implements ApplicationRunner {
 
             // Check if stored value is a raw BCrypt hash (not yet AES-encrypted)
             String asString = new String(stored, StandardCharsets.UTF_8);
-            if (asString.startsWith(BCRYPT_PREFIX)) {
+            if (asString.startsWith(BCRYPT_PREFIX_2A) || asString.startsWith(BCRYPT_PREFIX_2B)) {
                 // This is a raw BCrypt hash — encrypt it with AES
                 byte[] encrypted = aesEncryptionService.encrypt(asString);
                 user.setPasswordHashEncrypted(encrypted);

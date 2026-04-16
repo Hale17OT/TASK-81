@@ -37,16 +37,16 @@ class TeacherJourneyE2ETest extends BaseE2ETest {
     void teacher_navShowsPendingApprovals() {
         page.navigate(BASE_URL + "/");
 
-        // Teachers see the Pending Approvals nav link
-        assertThat(page.locator("a[href*='/requests/pending']")).isVisible();
+        // Teachers see the Pending Approvals nav link; scope to nav to avoid body duplicates.
+        assertThat(page.locator(".fluent-nav a[href*='/requests/pending']")).isVisible();
     }
 
     @Test
     void teacher_navShowsMyRequests() {
         page.navigate(BASE_URL + "/");
 
-        // Teachers (hasAnyRole STUDENT,TEACHER) also see My Requests
-        assertThat(page.locator("a[href*='/requests/mine']")).isVisible();
+        // Teachers (hasAnyRole STUDENT,TEACHER) also see My Requests; scope to nav.
+        assertThat(page.locator(".fluent-nav a[href*='/requests/mine']")).isVisible();
     }
 
     @Test
@@ -103,7 +103,9 @@ class TeacherJourneyE2ETest extends BaseE2ETest {
         context.close();
         createContext();
         loginAsStudent();
-        page.navigate(BASE_URL + "/requests/new/1");
+        // Item 5 (Hydrochloric Acid 1M Solution) is in the Science department,
+        // so teacher1 (Science dept) is assigned as the approver and will see it.
+        page.navigate(BASE_URL + "/requests/new/5");
         page.locator("#quantity").fill("1");
         page.locator("#justification").fill("E2E teacher approval test");
         page.waitForNavigation(() -> page.locator("#submitBtn").click());

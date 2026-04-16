@@ -42,7 +42,7 @@ public class CategoryController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Map<String, Long>>> createCategory(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createCategory(
             @AuthenticationPrincipal CampusUserPrincipal principal,
             @Valid @RequestBody CreateCategoryRequest request) {
         CategoryEntity created = categoryService.create(
@@ -51,6 +51,6 @@ public class CategoryController {
                 request.getParentId(),
                 principal != null ? principal.getUserId() : null
         );
-        return ResponseEntity.ok(ApiResponse.success(Map.of("id", created.getId())));
+        return ResponseEntity.ok(ApiResponse.success(Map.of("id", created.getId(), "name", created.getName())));
     }
 }

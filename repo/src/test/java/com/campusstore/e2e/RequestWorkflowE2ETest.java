@@ -23,7 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("e2e")
 class RequestWorkflowE2ETest extends BaseE2ETest {
 
-    private static final String ITEM_URL = BASE_URL + "/requests/new/1";
+    // Each submitting test must use a unique item to avoid 409 Conflict from the
+    // duplicate-pending-request check (same student + same item + pending status).
+    // Item IDs 1-3 are the first three electronics items seeded in V2__seed_data.sql
+    // (Arduino, Digital Multimeter, Breadboard) — all have requires_approval=TRUE.
+    private static final String ITEM_URL   = BASE_URL + "/requests/new/1"; // Arduino
+    private static final String ITEM_URL_2 = BASE_URL + "/requests/new/2"; // Digital Multimeter
+    private static final String ITEM_URL_3 = BASE_URL + "/requests/new/3"; // Breadboard & Jumper Kit
     private static final String MY_REQUESTS_URL = BASE_URL + "/requests/mine";
 
     @Test
@@ -59,8 +65,8 @@ class RequestWorkflowE2ETest extends BaseE2ETest {
     void student_submitsRequest_requestListIsNotEmpty() {
         loginAsStudent();
 
-        // Navigate to the request form and submit a request
-        page.navigate(ITEM_URL);
+        // Navigate to the request form and submit a request (use item 2 to avoid conflict with item 1)
+        page.navigate(ITEM_URL_2);
         page.locator("#quantity").fill("1");
         page.locator("#justification").fill("E2E list verification request");
 
@@ -113,7 +119,7 @@ class RequestWorkflowE2ETest extends BaseE2ETest {
     void teacher_pendingApprovals_showsSubmittedRequests() {
         // Student submits a request first
         loginAsStudent();
-        page.navigate(ITEM_URL);
+        page.navigate(ITEM_URL_3);
         page.locator("#quantity").fill("1");
         page.locator("#justification").fill("Request for teacher approval test");
         page.waitForNavigation(() -> page.locator("#submitBtn").click());

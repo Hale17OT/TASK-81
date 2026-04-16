@@ -84,8 +84,8 @@ class AuthJourneyE2ETest extends BaseE2ETest {
     void adminLogin_seesAdminNavLinks() {
         loginAsAdmin();
 
-        // Admin users should see admin nav items
-        assertThat(page.locator("a[href*='/admin/inventory']")).isVisible();
-        assertThat(page.locator("a[href*='/admin/users']")).isVisible();
+        // Admin users should see admin nav items; scope to nav to avoid matching home-page cards.
+        assertThat(page.locator(".fluent-nav a[href*='/admin/inventory']")).isVisible();
+        assertThat(page.locator(".fluent-nav a[href*='/admin/users']")).isVisible();
     }
 }

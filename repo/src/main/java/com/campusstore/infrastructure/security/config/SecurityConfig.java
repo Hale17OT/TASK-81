@@ -89,6 +89,7 @@ public class SecurityConfig {
         if (csrfEnabled) {
             http.csrf(csrf -> csrf
                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRequestHandler(new org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler())
             );
         } else {
             http.csrf(csrf -> csrf.disable());
@@ -116,13 +117,14 @@ public class SecurityConfig {
     }
 
     /**
-     * Web (Thymeleaf) security filter chain — applies to all other endpoints.
+     * Web (Thymeleaf) security filter chain — applies to all non-API endpoints.
      * Uses form login with redirects.
      */
     @Bean
     @Order(2)
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
         http
+            .securityMatcher("/**")
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login", "/css/**", "/js/**", "/images/**", "/error/**", "/actuator/health").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")

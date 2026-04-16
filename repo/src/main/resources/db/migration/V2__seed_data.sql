@@ -98,13 +98,15 @@ INSERT INTO storage_location (zone_id, name, x_coord, y_coord, level, temperatur
 -- admin (ADMIN, no department, home_zone: A1)
 -- SECURITY NOTE: Seed data stores raw BCrypt hashes as BINARY bytes.
 -- On first application startup, SeedDataInitializer automatically detects these
--- raw BCrypt hashes (by their $2a$ prefix) and AES-256-GCM encrypts them using
+-- raw BCrypt hashes (by their $2b$ prefix) and AES-256-GCM encrypts them using
 -- the runtime MASTER_KEY_PASSPHRASE. After startup, all password hashes are
 -- AES-encrypted at rest. CampusUserDetailsService also has a compatibility
 -- branch that handles both formats during the brief migration window.
+-- Bootstrap credentials (rotate on first login via /account/change-password):
+--   admin / admin123   |   teacher1,teacher2 / teacher123   |   student1,student2 / student123
 INSERT INTO `user` (username, password_hash_encrypted, display_name, home_zone_id, department_id, account_status, personalization_enabled) VALUES
     ('admin',
-     CAST('$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy' AS BINARY),
+     CAST('$2b$10$38qmGJtofbBF0/5zxpyWy.t9g6iyGh8FrIDgNr3j0SNpr2I5757vu' AS BINARY),
      'System Administrator',
      (SELECT id FROM zone WHERE name = 'Building A Floor 1'),
      NULL,
@@ -114,7 +116,7 @@ INSERT INTO `user` (username, password_hash_encrypted, display_name, home_zone_i
 -- teacher1 (TEACHER, Science, home_zone: A1)
 INSERT INTO `user` (username, password_hash_encrypted, display_name, home_zone_id, department_id, account_status, personalization_enabled) VALUES
     ('teacher1',
-     CAST('$2a$10$dXJ3SW6G7P50lGmMQgel7u4YB6Rh2aGHn7N4Mm7C.GkHGy6xaJK2y' AS BINARY),
+     CAST('$2b$10$ZKwtL3Qp0s/8ALgCZ7ha/OVqBVBmqacPN4OUpZkW1fakObzvRMWIC' AS BINARY),
      'Dr. Sarah Chen',
      (SELECT id FROM zone WHERE name = 'Building A Floor 1'),
      (SELECT id FROM department WHERE name = 'Science'),
@@ -124,7 +126,7 @@ INSERT INTO `user` (username, password_hash_encrypted, display_name, home_zone_i
 -- teacher2 (TEACHER, Engineering, home_zone: A2)
 INSERT INTO `user` (username, password_hash_encrypted, display_name, home_zone_id, department_id, account_status, personalization_enabled) VALUES
     ('teacher2',
-     CAST('$2a$10$dXJ3SW6G7P50lGmMQgel7u4YB6Rh2aGHn7N4Mm7C.GkHGy6xaJK2y' AS BINARY),
+     CAST('$2b$10$ZKwtL3Qp0s/8ALgCZ7ha/OVqBVBmqacPN4OUpZkW1fakObzvRMWIC' AS BINARY),
      'Prof. James Miller',
      (SELECT id FROM zone WHERE name = 'Building A Floor 2'),
      (SELECT id FROM department WHERE name = 'Engineering'),
@@ -134,7 +136,7 @@ INSERT INTO `user` (username, password_hash_encrypted, display_name, home_zone_i
 -- student1 (STUDENT, no department, home_zone: B1)
 INSERT INTO `user` (username, password_hash_encrypted, display_name, home_zone_id, department_id, account_status, personalization_enabled) VALUES
     ('student1',
-     CAST('$2a$10$EkRAGNKmM.vR11mS.6hPp.cZNjE5BTp9sFkBN7arGvcFnGJJGFqSa' AS BINARY),
+     CAST('$2b$10$Ypotw0TkKuZ0XReh4InaVua.1nNisVuRyyBIW9l0QsOwvMfX0kGzm' AS BINARY),
      'Alex Johnson',
      (SELECT id FROM zone WHERE name = 'Building B Floor 1'),
      NULL,
@@ -144,7 +146,7 @@ INSERT INTO `user` (username, password_hash_encrypted, display_name, home_zone_i
 -- student2 (STUDENT, no department, home_zone: Library)
 INSERT INTO `user` (username, password_hash_encrypted, display_name, home_zone_id, department_id, account_status, personalization_enabled) VALUES
     ('student2',
-     CAST('$2a$10$EkRAGNKmM.vR11mS.6hPp.cZNjE5BTp9sFkBN7arGvcFnGJJGFqSa' AS BINARY),
+     CAST('$2b$10$Ypotw0TkKuZ0XReh4InaVua.1nNisVuRyyBIW9l0QsOwvMfX0kGzm' AS BINARY),
      'Maria Garcia',
      (SELECT id FROM zone WHERE name = 'Library'),
      NULL,

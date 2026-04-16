@@ -72,12 +72,40 @@ public abstract class BaseE2ETest {
      * Performs a login using the standard Thymeleaf login form at {@code /login}.
      * After this call the page will have navigated away from /login on success,
      * or remain on /login?error on failure.
+     * <p>
+     * Handles the V3 forced-rotation redirect transparently: if the login lands on
+     * {@code /account/change-password}, the helper completes the rotation (using the
+     * same credential as the new password) and logs in a second time so tests see a
+     * fully-authenticated session without a pending rotation.
      */
     protected void loginWith(String username, String password) {
         page.navigate(BASE_URL + "/login");
         page.locator("#username").fill(username);
         page.locator("#password").fill(password);
-        page.locator("button[type='submit']").click();
+        // Wait for the login form submission and all subsequent redirects to finish
+        // before checking the resulting URL. Without this wait, click() returns
+        // immediately and page.url() still shows /login before the redirect completes,
+        // so the forced-rotation branch is never detected.
+        page.waitForNavigation(() -> page.locator("button[type='submit']").click());
+
+        // If the server redirected to the forced-rotation page, complete it.
+        if (page.url().contains("/account/change-password")) {
+            page.locator("#oldPassword").fill(password);
+            page.locator("#newPassword").fill(password);
+            page.locator("#confirmPassword").fill(password);
+            // Use the primary-button class to avoid matching the nav Logout button
+            // (which is also a button[type='submit'] in the shared layout).
+            page.locator("button.fluent-button--primary").click();
+            // The controller invalidates the session and redirects to /login?logout=true.
+            // Wait for that redirect to fully complete before interacting with the login form.
+            page.waitForURL(url -> url.contains("/login"));
+            // User is now unauthenticated — the nav Logout button is gone.
+            // Re-authenticate with the cleared principal from the database.
+            page.locator("#username").fill(username);
+            page.locator("#password").fill(password);
+            // Wait for navigation after re-login too so callers see the final URL.
+            page.waitForNavigation(() -> page.locator("button[type='submit']").click());
+        }
     }
 
     /** Logs in as the Docker seed admin user. */

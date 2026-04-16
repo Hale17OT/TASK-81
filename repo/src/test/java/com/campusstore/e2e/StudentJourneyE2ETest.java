@@ -38,12 +38,12 @@ class StudentJourneyE2ETest extends BaseE2ETest {
     void student_navShowsMyRequests_notAdminLinks() {
         page.navigate(BASE_URL + "/");
 
-        // Students see My Requests
-        assertThat(page.locator("a[href*='/requests/mine']")).isVisible();
+        // Students see My Requests; scope to nav to avoid matching home-page body links.
+        assertThat(page.locator(".fluent-nav a[href*='/requests/mine']")).isVisible();
 
         // Students do NOT see admin nav items
-        assertThat(page.locator("a[href*='/admin/inventory']")).not().isVisible();
-        assertThat(page.locator("a[href*='/admin/users']")).not().isVisible();
+        assertThat(page.locator(".fluent-nav a[href*='/admin/inventory']")).not().isVisible();
+        assertThat(page.locator(".fluent-nav a[href*='/admin/users']")).not().isVisible();
     }
 
     @Test
@@ -56,7 +56,7 @@ class StudentJourneyE2ETest extends BaseE2ETest {
 
     @Test
     void student_canNavigateToMyRequestsPage() {
-        page.locator("a[href*='/requests/mine']").click();
+        page.locator(".fluent-nav a[href*='/requests/mine']").click();
 
         assertThat(page).hasURL(Pattern.compile(".*/requests/mine.*"));
         assertThat(page.locator("body")).isVisible();
